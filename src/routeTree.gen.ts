@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminwtniraqRouteImport } from './routes/adminwtniraq'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as MerchantRouteImport } from './routes/merchant'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MerchantRoute = MerchantRouteImport.update({
+  id: '/merchant',
+  path: '/merchant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/adminwtniraq': typeof AdminwtniraqRoute
   '/auth': typeof AuthRoute
+  '/merchant': typeof MerchantRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/adminwtniraq': typeof AdminwtniraqRoute
   '/auth': typeof AuthRoute
+  '/merchant': typeof MerchantRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/adminwtniraq': typeof AdminwtniraqRoute
   '/auth': typeof AuthRoute
+  '/merchant': typeof MerchantRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/adminwtniraq' | '/auth'
+  fullPaths: '/' | '/adminwtniraq' | '/auth' | '/merchant'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/adminwtniraq' | '/auth'
-  id: '__root__' | '/' | '/adminwtniraq' | '/auth'
+  to: '/' | '/adminwtniraq' | '/auth' | '/merchant'
+  id: '__root__' | '/' | '/adminwtniraq' | '/auth' | '/merchant'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminwtniraqRoute: typeof AdminwtniraqRoute
   AuthRoute: typeof AuthRoute
+  MerchantRoute: typeof MerchantRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/merchant': {
+      id: '/merchant'
+      path: '/merchant'
+      fullPath: '/merchant'
+      preLoaderRoute: typeof MerchantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminwtniraqRoute: AdminwtniraqRoute,
   AuthRoute: AuthRoute,
+  MerchantRoute: MerchantRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
