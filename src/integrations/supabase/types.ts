@@ -167,6 +167,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_set_role: {
+        Args: {
+          _grant: boolean
+          _role: Database["public"]["Enums"]["app_role"]
+          _username: string
+        }
+        Returns: {
+          banned: boolean
+          coins: number
+          created_at: string
+          id: string
+          username: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       buy_product: {
         Args: { _product_id: string }
         Returns: {
