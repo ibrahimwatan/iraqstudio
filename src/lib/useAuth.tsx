@@ -14,6 +14,7 @@ type AuthValue = {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isMerchant: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -25,12 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isMerchant, setIsMerchant] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function loadProfile(userId: string | undefined) {
     if (!userId) {
       setProfile(null);
       setIsAdmin(false);
+      setIsMerchant(false);
       return;
     }
     const [{ data: prof }, { data: roles }] = await Promise.all([
@@ -39,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     setProfile((prof as Profile | null) ?? null);
     setIsAdmin(Boolean(roles?.some((r) => r.role === "admin")));
+    setIsMerchant(Boolean(roles?.some((r) => (r.role as string) === "merchant")));
   }
 
   useEffect(() => {
