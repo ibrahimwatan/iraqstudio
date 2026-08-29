@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     isAdmin,
+    isMerchant,
     loading,
     refresh: async () => {
       await loadProfile(session?.user?.id);
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       setProfile(null);
       setIsAdmin(false);
+      setIsMerchant(false);
     },
   };
 
