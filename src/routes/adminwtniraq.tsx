@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, Coins, Package, Trash2 } from "lucide-react";
+import { Ban, Coins, Package, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { PRODUCT_CATEGORIES, categoryLabel, formatCoins } from "@/lib/store";
@@ -76,6 +76,7 @@ function AdminPanel() {
   const [banUser, setBanUser] = useState("");
   const [coinUser, setCoinUser] = useState("");
   const [coinAmount, setCoinAmount] = useState("100");
+  const [merchantUser, setMerchantUser] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -117,6 +118,22 @@ function AdminPanel() {
       toast.success(`تم شحن ${formatCoins(vars.amount)} عملة إلى ${vars.username}`);
       setCoinUser("");
       void refresh();
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
+
+  const setMerchant = useMutation({
+    mutationFn: async ({ username, grant }: { username: string; grant: boolean }) => {
+      const { error } = await supabase.rpc("admin_set_role", {
+        _username: username,
+        _role: "merchant",
+        _grant: grant,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.grant ? `تم تعيين ${vars.username} تاجراً` : `تم سحب صفة التاجر من ${vars.username}`);
+      setMerchantUser("");
     },
     onError: (e) => toast.error(readError(e)),
   });
@@ -229,6 +246,38 @@ function AdminPanel() {
             استخدم رقماً سالباً لخصم العملات من العضو.
           </p>
         </section>
+
+        <section className="panel p-5 rise">
+          <SectionTitle
+            icon={<Store className="size-4 text-primary" />}
+            title="تعيين تاجر"
+            hint="اكتب يوزر الشخص لمنحه صفة تاجر"
+          />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Input
+              dir="ltr"
+              value={merchantUser}
+              onChange={(e) => setMerchantUser(e.target.value)}
+              placeholder="username"
+              className="min-w-40 flex-1"
+            />
+            <Button
+              disabled={!merchantUser.trim() || setMerchant.isPending}
+              onClick={() => setMerchant.mutate({ username: merchantUser, grant: true })}
+            >
+              تعيين تاجر
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!merchantUser.trim() || setMerchant.isPending}
+              onClick={() => setMerchant.mutate({ username: merchantUser, grant: false })}
+            >
+              سحب الصفة
+            </Button>
+          </div>
+        </section>
+
+
 
         <section className="panel p-5 rise">
           <SectionTitle
