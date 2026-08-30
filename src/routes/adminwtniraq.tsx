@@ -138,28 +138,8 @@ function AdminPanel() {
     onError: (e) => toast.error(readError(e)),
   });
 
-  const addProduct = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("products").insert({
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        price: Number(price) || 0,
-        stock: Number(stock) || 1,
-        image_url: imageUrl.trim() || null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("تم عرض المنتج في المتجر");
-      setTitle("");
-      setDescription("");
-      setImageUrl("");
-      void qc.invalidateQueries({ queryKey: ["admin-products"] });
-      void qc.invalidateQueries({ queryKey: ["products"] });
-    },
-    onError: (e) => toast.error(readError(e)),
-  });
+
+
 
   const removeProduct = useMutation({
     mutationFn: async (id: string) => {
