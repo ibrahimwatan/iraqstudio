@@ -5,18 +5,10 @@ import { toast } from "sonner";
 import { Ban, Coins, Package, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { PRODUCT_CATEGORIES, categoryLabel, formatCoins } from "@/lib/store";
+import { categoryLabel, formatCoins } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 export const Route = createFileRoute("/adminwtniraq")({
   head: () => ({
