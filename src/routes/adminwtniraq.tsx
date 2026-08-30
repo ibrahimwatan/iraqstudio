@@ -277,93 +277,13 @@ function AdminPanel() {
           </div>
         </section>
 
-
-
         <section className="panel p-5 rise">
           <SectionTitle
-            icon={<Package className="size-4 text-success" />}
-            title="عرض منتجات"
-            hint="يظهر مباشرة للأعضاء في المتجر"
+            icon={<Package className="size-4 text-muted-foreground" />}
+            title="المنتجات المعروضة"
+            hint="للمراجعة والحذف فقط — الإضافة من لوحة التاجر"
           />
-          <form
-            className="mt-4 grid gap-3 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!title.trim()) {
-                toast.error("اكتب اسم المنتج");
-                return;
-              }
-              addProduct.mutate();
-            }}
-          >
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-title">اسم المنتج</Label>
-              <Input id="p-title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-desc">الوصف</Label>
-              <Textarea
-                id="p-desc"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>القسم</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRODUCT_CATEGORIES.map((c) => (
-                    <SelectItem key={c.key} value={c.key}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-price">السعر بالعملات</Label>
-              <Input
-                id="p-price"
-                dir="ltr"
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-stock">الكمية</Label>
-              <Input
-                id="p-stock"
-                dir="ltr"
-                type="number"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-img">رابط الصورة (اختياري)</Label>
-              <Input
-                id="p-img"
-                dir="ltr"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Button type="submit" className="w-full font-display font-bold" disabled={addProduct.isPending}>
-                عرض المنتج
-              </Button>
-            </div>
-          </form>
-        </section>
 
-        <section className="panel p-5 rise">
-          <SectionTitle icon={<Package className="size-4 text-muted-foreground" />} title="المنتجات المعروضة" />
           <div className="mt-4 space-y-2">
             {products.isLoading && <p className="text-[12px] text-muted-foreground">جاري التحميل...</p>}
             {products.data?.length === 0 && (
