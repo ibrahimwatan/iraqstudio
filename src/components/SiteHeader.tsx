@@ -50,13 +50,14 @@ export function SiteHeader() {
                 <span className="text-[10px] text-muted-foreground">عملة</span>
               </span>
 
-              {isMerchant && !isAdmin && (
+              {isMerchant && (
                 <Button asChild variant="outline" size="icon" aria-label="لوحة التاجر">
                   <Link to="/merchant">
                     <Store className="size-4" />
                   </Link>
                 </Button>
               )}
+
               {isAdmin && (
                 <Button asChild variant="outline" size="icon" aria-label="لوحة الإدارة">
                   <Link to="/adminwtniraq">

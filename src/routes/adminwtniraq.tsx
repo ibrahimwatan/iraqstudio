@@ -1,22 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Ban, Coins, Package, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { PRODUCT_CATEGORIES, categoryLabel, formatCoins } from "@/lib/store";
+import { categoryLabel, formatCoins } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 
 export const Route = createFileRoute("/adminwtniraq")({
   head: () => ({
@@ -78,12 +70,8 @@ function AdminPanel() {
   const [coinAmount, setCoinAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<string>("accounts");
-  const [price, setPrice] = useState("500");
-  const [stock, setStock] = useState("1");
-  const [imageUrl, setImageUrl] = useState("");
+
+
 
   const products = useQuery({
     queryKey: ["admin-products"],
@@ -138,28 +126,8 @@ function AdminPanel() {
     onError: (e) => toast.error(readError(e)),
   });
 
-  const addProduct = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("products").insert({
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        price: Number(price) || 0,
-        stock: Number(stock) || 1,
-        image_url: imageUrl.trim() || null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("تم عرض المنتج في المتجر");
-      setTitle("");
-      setDescription("");
-      setImageUrl("");
-      void qc.invalidateQueries({ queryKey: ["admin-products"] });
-      void qc.invalidateQueries({ queryKey: ["products"] });
-    },
-    onError: (e) => toast.error(readError(e)),
-  });
+
+
 
   const removeProduct = useMutation({
     mutationFn: async (id: string) => {
@@ -277,93 +245,13 @@ function AdminPanel() {
           </div>
         </section>
 
-
-
         <section className="panel p-5 rise">
           <SectionTitle
-            icon={<Package className="size-4 text-success" />}
-            title="عرض منتجات"
-            hint="يظهر مباشرة للأعضاء في المتجر"
+            icon={<Package className="size-4 text-muted-foreground" />}
+            title="المنتجات المعروضة"
+            hint="للمراجعة والحذف فقط — الإضافة من لوحة التاجر"
           />
-          <form
-            className="mt-4 grid gap-3 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!title.trim()) {
-                toast.error("اكتب اسم المنتج");
-                return;
-              }
-              addProduct.mutate();
-            }}
-          >
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-title">اسم المنتج</Label>
-              <Input id="p-title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="p-desc">الوصف</Label>
-              <Textarea
-                id="p-desc"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>القسم</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRODUCT_CATEGORIES.map((c) => (
-                    <SelectItem key={c.key} value={c.key}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-price">السعر بالعملات</Label>
-              <Input
-                id="p-price"
-                dir="ltr"
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-stock">الكمية</Label>
-              <Input
-                id="p-stock"
-                dir="ltr"
-                type="number"
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="p-img">رابط الصورة (اختياري)</Label>
-              <Input
-                id="p-img"
-                dir="ltr"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Button type="submit" className="w-full font-display font-bold" disabled={addProduct.isPending}>
-                عرض المنتج
-              </Button>
-            </div>
-          </form>
-        </section>
 
-        <section className="panel p-5 rise">
-          <SectionTitle icon={<Package className="size-4 text-muted-foreground" />} title="المنتجات المعروضة" />
           <div className="mt-4 space-y-2">
             {products.isLoading && <p className="text-[12px] text-muted-foreground">جاري التحميل...</p>}
             {products.data?.length === 0 && (

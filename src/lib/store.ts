@@ -1,4 +1,4 @@
-export const DISCORD_URL = "https://discord.gg/gAFJE6XyNr";
+export const DISCORD_URL = "https://discord.gg/9rbAZMDFPP";
 
 export const BRAND_AR = "عـراق سـتديـو";
 export const BRAND_EN = "IRAQ STUDIO";
