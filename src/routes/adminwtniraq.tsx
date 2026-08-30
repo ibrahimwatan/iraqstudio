@@ -249,6 +249,38 @@ function AdminPanel() {
 
         <section className="panel p-5 rise">
           <SectionTitle
+            icon={<Store className="size-4 text-primary" />}
+            title="تعيين تاجر"
+            hint="اكتب يوزر الشخص لمنحه صفة تاجر"
+          />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Input
+              dir="ltr"
+              value={merchantUser}
+              onChange={(e) => setMerchantUser(e.target.value)}
+              placeholder="username"
+              className="min-w-40 flex-1"
+            />
+            <Button
+              disabled={!merchantUser.trim() || setMerchant.isPending}
+              onClick={() => setMerchant.mutate({ username: merchantUser, grant: true })}
+            >
+              تعيين تاجر
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!merchantUser.trim() || setMerchant.isPending}
+              onClick={() => setMerchant.mutate({ username: merchantUser, grant: false })}
+            >
+              سحب الصفة
+            </Button>
+          </div>
+        </section>
+
+
+
+        <section className="panel p-5 rise">
+          <SectionTitle
             icon={<Package className="size-4 text-success" />}
             title="عرض منتجات"
             hint="يظهر مباشرة للأعضاء في المتجر"

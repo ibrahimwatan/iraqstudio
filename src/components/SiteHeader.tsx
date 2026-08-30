@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck, Store } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { BRAND_AR, BRAND_EN, formatCoins } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
-  const { profile, isAdmin, signOut } = useAuth();
+  const { profile, isAdmin, isMerchant, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
