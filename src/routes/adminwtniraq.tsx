@@ -78,12 +78,8 @@ function AdminPanel() {
   const [coinAmount, setCoinAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<string>("accounts");
-  const [price, setPrice] = useState("500");
-  const [stock, setStock] = useState("1");
-  const [imageUrl, setImageUrl] = useState("");
+
+
 
   const products = useQuery({
     queryKey: ["admin-products"],
