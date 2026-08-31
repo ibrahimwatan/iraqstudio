@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Package, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { PRODUCT_CATEGORIES, categoryLabel, formatCoins } from "@/lib/store";
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_FILES_BUCKET,
+  categoryLabel,
+  deliveryKind,
+  formatCoins,
+} from "@/lib/store";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
