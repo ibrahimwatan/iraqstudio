@@ -132,7 +132,39 @@ function Storefront() {
         <DiscordAction icon={<MessageCircle className="size-4" />} label="سيرفر الديسكورد" hint="مجتمع المتجر" />
       </section>
 
+      {delivery && (
+        <section className="panel mt-4 p-5 rise">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-display text-[14px] font-bold">تسليم: {delivery.title}</p>
+            <Button variant="ghost" size="sm" onClick={() => setDelivery(null)}>
+              إغلاق
+            </Button>
+          </div>
+          {delivery.text && (
+            <pre
+              dir="ltr"
+              className="mt-3 max-h-64 overflow-auto rounded-lg border border-border bg-elevated p-3 font-mono text-[12px] whitespace-pre-wrap"
+            >
+              {delivery.text}
+            </pre>
+          )}
+          {delivery.downloadUrl && (
+            <Button asChild className="mt-3 font-display font-bold">
+              <a href={delivery.downloadUrl} target="_blank" rel="noreferrer" download>
+                تحميل الملف
+              </a>
+            </Button>
+          )}
+          {!delivery.text && !delivery.downloadUrl && (
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              تواصل معنا في الديسكورد لإكمال التسليم.
+            </p>
+          )}
+        </section>
+      )}
+
       <section className="mt-8">
+
         <div className="flex flex-wrap items-center gap-2">
           {CATEGORIES.map((c) => (
             <button
