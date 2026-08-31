@@ -211,8 +211,21 @@ function MerchantPanel() {
                 toast.error("اكتب اسم المنتج");
                 return;
               }
+              if (kind === "account" && (!accountName.trim() || !accountUser.trim())) {
+                toast.error("اكتب اسم ويوزر الحساب");
+                return;
+              }
+              if (kind === "script" && !scriptText.trim()) {
+                toast.error("الصق كود السكربت");
+                return;
+              }
+              if (kind === "file" && !file) {
+                toast.error("ارفع ملف المنتج");
+                return;
+              }
               addProduct.mutate();
             }}
+
           >
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="m-title">اسم المنتج</Label>
