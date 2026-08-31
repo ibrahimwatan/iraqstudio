@@ -88,6 +88,12 @@ function MerchantPanel() {
   const [price, setPrice] = useState("500");
   const [stock, setStock] = useState("1");
   const [imageUrl, setImageUrl] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountUser, setAccountUser] = useState("");
+  const [scriptText, setScriptText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
+  const kind = deliveryKind(category);
 
   const mine = useQuery({
     queryKey: ["merchant-products", user?.id],
@@ -110,6 +116,23 @@ function MerchantPanel() {
 
   const addProduct = useMutation({
     mutationFn: async () => {
+      let deliveryText: string | null = null;
+      let deliveryFile: string | null = null;
+
+      if (kind === "account") {
+        deliveryText = `اسم الحساب: ${accountName.trim()}\nيوزر الحساب: ${accountUser.trim()}`;
+      } else if (kind === "script") {
+        deliveryText = scriptText.trim();
+      } else if (kind === "file") {
+        const safe = file!.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${user!.id}/${crypto.randomUUID()}-${safe}`;
+        const up = await supabase.storage.from(PRODUCT_FILES_BUCKET).upload(path, file!, {
+          upsert: false,
+        });
+        if (up.error) throw up.error;
+        deliveryFile = path;
+      }
+
       const { error } = await supabase.from("products").insert({
         title: title.trim(),
         description: description.trim(),
@@ -118,6 +141,8 @@ function MerchantPanel() {
         stock: Number(stock) || 1,
         image_url: imageUrl.trim() || null,
         created_by: user!.id,
+        delivery_text: deliveryText,
+        delivery_file: deliveryFile,
       });
       if (error) throw error;
     },
@@ -126,10 +151,15 @@ function MerchantPanel() {
       setTitle("");
       setDescription("");
       setImageUrl("");
+      setAccountName("");
+      setAccountUser("");
+      setScriptText("");
+      setFile(null);
       invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
   });
+
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
