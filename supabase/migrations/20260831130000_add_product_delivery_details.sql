@@ -52,7 +52,7 @@ CREATE POLICY "merchants read product files" ON storage.objects
 FOR SELECT TO authenticated
 USING (
   bucket_id = 'product-files' AND
-  (owner_id = auth.uid() OR public.has_role(auth.uid(), 'admin'))
+  (owner_id = auth.uid()::text OR public.has_role(auth.uid(), 'admin'))
 );
 
 DROP POLICY IF EXISTS "merchants delete product files" ON storage.objects;
@@ -60,5 +60,5 @@ CREATE POLICY "merchants delete product files" ON storage.objects
 FOR DELETE TO authenticated
 USING (
   bucket_id = 'product-files' AND
-  (owner_id = auth.uid() OR public.has_role(auth.uid(), 'admin'))
+  (owner_id = auth.uid()::text OR public.has_role(auth.uid(), 'admin'))
 );
