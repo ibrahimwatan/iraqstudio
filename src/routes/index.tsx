@@ -51,6 +51,12 @@ function Storefront() {
   const { user, profile, refresh } = useAuth();
   const qc = useQueryClient();
   const [cat, setCat] = useState<string>("all");
+  const [delivery, setDelivery] = useState<{
+    title: string;
+    text: string | null;
+    downloadUrl: string | null;
+  } | null>(null);
+
 
   const products = useQuery({
     queryKey: ["products"],
