@@ -10,9 +10,11 @@ import {
   BRAND_EN,
   CATEGORIES,
   DISCORD_URL,
+  PRODUCT_FILES_BUCKET,
   categoryLabel,
   formatCoins,
 } from "@/lib/store";
+
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero.jpg";
 
