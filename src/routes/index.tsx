@@ -66,18 +66,28 @@ function Storefront() {
 
   const buy = useMutation({
     mutationFn: async (product: Product) => {
-      const { error } = await supabase.rpc("buy_product", { _product_id: product.id });
+      const { data, error } = await supabase.rpc("buy_product", { _product_id: product.id });
       if (error) throw error;
+      const row = data as { delivery_text: string | null; delivery_file: string | null };
+      let downloadUrl: string | null = null;
+      if (row?.delivery_file) {
+        const signed = await supabase.storage
+          .from(PRODUCT_FILES_BUCKET)
+          .createSignedUrl(row.delivery_file, 60 * 60);
+        downloadUrl = signed.data?.signedUrl ?? null;
+      }
+      return { text: row?.delivery_text ?? null, downloadUrl };
     },
-    onSuccess: (_d, p) => {
-      toast.success(`تم شراء ${p.title} بنجاح، تواصل معنا في الديسكورد للتسليم`);
+    onSuccess: (d, p) => {
+      toast.success(`تم شراء ${p.title} بنجاح`);
+      setDelivery({ title: p.title, text: d.text, downloadUrl: d.downloadUrl });
       void refresh();
       void qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(
-        msg.includes("not_enough_coins")
+        msg.includes("not_enough_coins") || msg.includes("insufficient_coins")
           ? "رصيد Iraq Coins غير كافي"
           : msg.includes("out_of_stock")
             ? "الكمية غير متوفرة حالياً"
@@ -87,6 +97,7 @@ function Storefront() {
       );
     },
   });
+
 
   const list = (products.data ?? []).filter((p) => cat === "all" || p.category === cat);
 
