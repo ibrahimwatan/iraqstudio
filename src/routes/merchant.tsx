@@ -88,8 +88,9 @@ function MerchantPanel() {
   const [price, setPrice] = useState("500");
   const [stock, setStock] = useState("1");
   const [imageUrl, setImageUrl] = useState("");
-  const [accountName, setAccountName] = useState("");
   const [accountUser, setAccountUser] = useState("");
+  const [accountPass, setAccountPass] = useState("");
+  const [noEmail, setNoEmail] = useState(false);
   const [scriptText, setScriptText] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
