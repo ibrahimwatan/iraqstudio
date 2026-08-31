@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Eye, EyeOff, Package, Store, Trash2 } from "lucide-react";
@@ -81,13 +81,18 @@ function MerchantPanel() {
   const [price, setPrice] = useState("500");
   const [stock, setStock] = useState("1");
   const [imageUrl, setImageUrl] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountUsername, setAccountUsername] = useState("");
+  const [scriptContent, setScriptContent] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mine = useQuery({
     queryKey: ["merchant-products", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, category, price, stock, active")
+        .select("id, title, category, price, stock, active, file_name")
         .eq("created_by", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -103,6 +108,21 @@ function MerchantPanel() {
 
   const addProduct = useMutation({
     mutationFn: async () => {
+      let filePath: string | null = null;
+
+      if (selectedFile) {
+        if (selectedFile.size > 50 * 1024 * 1024) {
+          throw new Error("حجم الملف يجب أن يكون أقل من 50 ميغابايت");
+        }
+        const safeName = selectedFile.name.replace(/[^\w.\-() ]/g, "_");
+        filePath = user!.id + "/" + crypto.randomUUID() + "-" + safeName;
+        const { error: uploadError } = await supabase.storage.from("product-files").upload(filePath, selectedFile, {
+          upsert: false,
+          contentType: selectedFile.type || "application/octet-stream",
+        });
+        if (uploadError) throw uploadError;
+      }
+
       const { error } = await supabase.from("products").insert({
         title: title.trim(),
         description: description.trim(),
@@ -110,15 +130,28 @@ function MerchantPanel() {
         price: Number(price) || 0,
         stock: Number(stock) || 1,
         image_url: imageUrl.trim() || null,
+        account_name: category === "accounts" ? accountName.trim() : null,
+        account_username: category === "accounts" ? accountUsername.trim() : null,
+        script_content: category === "scripts" ? scriptContent.trim() : null,
+        file_path: filePath,
+        file_name: filePath ? selectedFile?.name ?? null : null,
         created_by: user!.id,
       });
-      if (error) throw error;
+      if (error) {
+        if (filePath) await supabase.storage.from("product-files").remove([filePath]);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success("تم عرض منتجك في المتجر");
       setTitle("");
       setDescription("");
       setImageUrl("");
+      setAccountName("");
+      setAccountUsername("");
+      setScriptContent("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
@@ -174,6 +207,18 @@ function MerchantPanel() {
                 toast.error("اكتب اسم المنتج");
                 return;
               }
+              if (category === "accounts" && (!accountName.trim() || !accountUsername.trim())) {
+                toast.error("اكتب اسم الحساب واليوزر للحسابات");
+                return;
+              }
+              if (category === "scripts" && !scriptContent.trim()) {
+                toast.error("أضف محتوى السكربت");
+                return;
+              }
+              if ((category === "maps" || category === "studio") && !selectedFile) {
+                toast.error("ارفع ملف المنتج لهذا القسم");
+                return;
+              }
               addProduct.mutate();
             }}
           >
@@ -205,6 +250,54 @@ function MerchantPanel() {
                 </SelectContent>
               </Select>
             </div>
+            {category === "accounts" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="m-account-name">اسم الحساب *</Label>
+                  <Input
+                    id="m-account-name"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    placeholder="مثال: حساب روبلوكس مميز"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="m-account-username">يوزر الحساب *</Label>
+                  <Input
+                    id="m-account-username"
+                    dir="ltr"
+                    value={accountUsername}
+                    onChange={(e) => setAccountUsername(e.target.value)}
+                    placeholder="username"
+                  />
+                </div>
+              </>
+            )}
+            {category === "scripts" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="m-script">السكربت *</Label>
+                <Textarea
+                  id="m-script"
+                  rows={6}
+                  dir="ltr"
+                  value={scriptContent}
+                  onChange={(e) => setScriptContent(e.target.value)}
+                  placeholder="الصق محتوى السكربت هنا"
+                />
+              </div>
+            )}
+            {(category === "maps" || category === "studio") && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="m-file">ملف المنتج *</Label>
+                <Input
+                  ref={fileInputRef}
+                  id="m-file"
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                />
+                <p className="text-[11px] text-muted-foreground">مطلوب لهذا القسم — الحد الأقصى 50 ميغابايت.</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="m-price">السعر بالعملات</Label>
               <Input id="m-price" dir="ltr" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
@@ -246,6 +339,7 @@ function MerchantPanel() {
                   <p className="text-[11px] text-muted-foreground">
                     {categoryLabel(p.category)} · {formatCoins(p.price)} عملة · متوفر {p.stock}
                     {!p.active && " · مخفي"}
+                    {p.file_name && " · مرفق ملف"}
                   </p>
                 </div>
                 <Button
