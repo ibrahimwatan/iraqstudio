@@ -18,6 +18,19 @@ export function categoryLabel(key: string) {
   return CATEGORIES.find((c) => c.key === key)?.label ?? "خدمات أخرى";
 }
 
+export type DeliveryKind = "file" | "account" | "script" | "none";
+
+/** ما الذي يجب على التاجر تقديمه حسب القسم */
+export function deliveryKind(category: string): DeliveryKind {
+  if (category === "maps" || category === "studio") return "file";
+  if (category === "accounts") return "account";
+  if (category === "scripts") return "script";
+  return "none";
+}
+
+export const PRODUCT_FILES_BUCKET = "product-files";
+
+
 export function normalizeUsername(raw: string) {
   return raw.trim().toLowerCase().replace(/\s+/g, "");
 }
