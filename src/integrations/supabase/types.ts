@@ -20,6 +20,8 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          delivery_file: string | null
+          delivery_text: string | null
           description: string
           id: string
           image_url: string | null
@@ -32,6 +34,8 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          delivery_file?: string | null
+          delivery_text?: string | null
           description?: string
           id?: string
           image_url?: string | null
@@ -44,6 +48,8 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          delivery_file?: string | null
+          delivery_text?: string | null
           description?: string
           id?: string
           image_url?: string | null
@@ -80,6 +86,8 @@ export type Database = {
       purchases: {
         Row: {
           created_at: string
+          delivery_file: string | null
+          delivery_text: string | null
           id: string
           price: number
           product_id: string | null
@@ -88,6 +96,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_file?: string | null
+          delivery_text?: string | null
           id?: string
           price: number
           product_id?: string | null
@@ -96,6 +106,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_file?: string | null
+          delivery_text?: string | null
           id?: string
           price?: number
           product_id?: string | null
@@ -191,6 +203,8 @@ export type Database = {
         Args: { _product_id: string }
         Returns: {
           created_at: string
+          delivery_file: string | null
+          delivery_text: string | null
           id: string
           price: number
           product_id: string | null

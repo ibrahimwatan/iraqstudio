@@ -10,9 +10,11 @@ import {
   BRAND_EN,
   CATEGORIES,
   DISCORD_URL,
+  PRODUCT_FILES_BUCKET,
   categoryLabel,
   formatCoins,
 } from "@/lib/store";
+
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero.jpg";
 
@@ -49,6 +51,12 @@ function Storefront() {
   const { user, profile, refresh } = useAuth();
   const qc = useQueryClient();
   const [cat, setCat] = useState<string>("all");
+  const [delivery, setDelivery] = useState<{
+    title: string;
+    text: string | null;
+    downloadUrl: string | null;
+  } | null>(null);
+
 
   const products = useQuery({
     queryKey: ["products"],
@@ -66,18 +74,28 @@ function Storefront() {
 
   const buy = useMutation({
     mutationFn: async (product: Product) => {
-      const { error } = await supabase.rpc("buy_product", { _product_id: product.id });
+      const { data, error } = await supabase.rpc("buy_product", { _product_id: product.id });
       if (error) throw error;
+      const row = data as { delivery_text: string | null; delivery_file: string | null };
+      let downloadUrl: string | null = null;
+      if (row?.delivery_file) {
+        const signed = await supabase.storage
+          .from(PRODUCT_FILES_BUCKET)
+          .createSignedUrl(row.delivery_file, 60 * 60);
+        downloadUrl = signed.data?.signedUrl ?? null;
+      }
+      return { text: row?.delivery_text ?? null, downloadUrl };
     },
-    onSuccess: (_d, p) => {
-      toast.success(`تم شراء ${p.title} بنجاح، تواصل معنا في الديسكورد للتسليم`);
+    onSuccess: (d, p) => {
+      toast.success(`تم شراء ${p.title} بنجاح`);
+      setDelivery({ title: p.title, text: d.text, downloadUrl: d.downloadUrl });
       void refresh();
       void qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(
-        msg.includes("not_enough_coins")
+        msg.includes("not_enough_coins") || msg.includes("insufficient_coins")
           ? "رصيد Iraq Coins غير كافي"
           : msg.includes("out_of_stock")
             ? "الكمية غير متوفرة حالياً"
@@ -87,6 +105,7 @@ function Storefront() {
       );
     },
   });
+
 
   const list = (products.data ?? []).filter((p) => cat === "all" || p.category === cat);
 
@@ -113,7 +132,39 @@ function Storefront() {
         <DiscordAction icon={<MessageCircle className="size-4" />} label="سيرفر الديسكورد" hint="مجتمع المتجر" />
       </section>
 
+      {delivery && (
+        <section className="panel mt-4 p-5 rise">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-display text-[14px] font-bold">تسليم: {delivery.title}</p>
+            <Button variant="ghost" size="sm" onClick={() => setDelivery(null)}>
+              إغلاق
+            </Button>
+          </div>
+          {delivery.text && (
+            <pre
+              dir="ltr"
+              className="mt-3 max-h-64 overflow-auto rounded-lg border border-border bg-elevated p-3 font-mono text-[12px] whitespace-pre-wrap"
+            >
+              {delivery.text}
+            </pre>
+          )}
+          {delivery.downloadUrl && (
+            <Button asChild className="mt-3 font-display font-bold">
+              <a href={delivery.downloadUrl} target="_blank" rel="noreferrer" download>
+                تحميل الملف
+              </a>
+            </Button>
+          )}
+          {!delivery.text && !delivery.downloadUrl && (
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              تواصل معنا في الديسكورد لإكمال التسليم.
+            </p>
+          )}
+        </section>
+      )}
+
       <section className="mt-8">
+
         <div className="flex flex-wrap items-center gap-2">
           {CATEGORIES.map((c) => (
             <button

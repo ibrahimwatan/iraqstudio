@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Package, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { PRODUCT_CATEGORIES, categoryLabel, formatCoins } from "@/lib/store";
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_FILES_BUCKET,
+  categoryLabel,
+  deliveryKind,
+  formatCoins,
+} from "@/lib/store";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +88,12 @@ function MerchantPanel() {
   const [price, setPrice] = useState("500");
   const [stock, setStock] = useState("1");
   const [imageUrl, setImageUrl] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountUser, setAccountUser] = useState("");
+  const [scriptText, setScriptText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
+  const kind = deliveryKind(category);
 
   const mine = useQuery({
     queryKey: ["merchant-products", user?.id],
@@ -103,6 +116,23 @@ function MerchantPanel() {
 
   const addProduct = useMutation({
     mutationFn: async () => {
+      let deliveryText: string | null = null;
+      let deliveryFile: string | null = null;
+
+      if (kind === "account") {
+        deliveryText = `اسم الحساب: ${accountName.trim()}\nيوزر الحساب: ${accountUser.trim()}`;
+      } else if (kind === "script") {
+        deliveryText = scriptText.trim();
+      } else if (kind === "file") {
+        const safe = file!.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${user!.id}/${crypto.randomUUID()}-${safe}`;
+        const up = await supabase.storage.from(PRODUCT_FILES_BUCKET).upload(path, file!, {
+          upsert: false,
+        });
+        if (up.error) throw up.error;
+        deliveryFile = path;
+      }
+
       const { error } = await supabase.from("products").insert({
         title: title.trim(),
         description: description.trim(),
@@ -111,6 +141,8 @@ function MerchantPanel() {
         stock: Number(stock) || 1,
         image_url: imageUrl.trim() || null,
         created_by: user!.id,
+        delivery_text: deliveryText,
+        delivery_file: deliveryFile,
       });
       if (error) throw error;
     },
@@ -119,10 +151,15 @@ function MerchantPanel() {
       setTitle("");
       setDescription("");
       setImageUrl("");
+      setAccountName("");
+      setAccountUser("");
+      setScriptText("");
+      setFile(null);
       invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
   });
+
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
@@ -174,8 +211,21 @@ function MerchantPanel() {
                 toast.error("اكتب اسم المنتج");
                 return;
               }
+              if (kind === "account" && (!accountName.trim() || !accountUser.trim())) {
+                toast.error("اكتب اسم ويوزر الحساب");
+                return;
+              }
+              if (kind === "script" && !scriptText.trim()) {
+                toast.error("الصق كود السكربت");
+                return;
+              }
+              if (kind === "file" && !file) {
+                toast.error("ارفع ملف المنتج");
+                return;
+              }
               addProduct.mutate();
             }}
+
           >
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="m-title">اسم المنتج</Label>
@@ -223,6 +273,53 @@ function MerchantPanel() {
                 placeholder="https://..."
               />
             </div>
+
+            {kind === "account" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="m-acc-name">اسم الحساب</Label>
+                  <Input id="m-acc-name" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="m-acc-user">يوزر الحساب</Label>
+                  <Input
+                    id="m-acc-user"
+                    dir="ltr"
+                    value={accountUser}
+                    onChange={(e) => setAccountUser(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {kind === "script" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="m-script">كود السكربت</Label>
+                <Textarea
+                  id="m-script"
+                  dir="ltr"
+                  rows={5}
+                  className="font-mono text-[12px]"
+                  value={scriptText}
+                  onChange={(e) => setScriptText(e.target.value)}
+                />
+              </div>
+            )}
+
+            {kind === "file" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="m-file">ملف المنتج (إلزامي)</Label>
+                <Input
+                  id="m-file"
+                  type="file"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {file ? `الملف: ${file.name}` : "الحجم الأقصى 50MB — يُسلَّم للمشتري تلقائياً بعد الشراء."}
+                </p>
+              </div>
+            )}
+
             <div className="sm:col-span-2">
               <Button type="submit" className="w-full font-display font-bold" disabled={addProduct.isPending}>
                 عرض المنتج
