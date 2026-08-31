@@ -273,6 +273,53 @@ function MerchantPanel() {
                 placeholder="https://..."
               />
             </div>
+
+            {kind === "account" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="m-acc-name">اسم الحساب</Label>
+                  <Input id="m-acc-name" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="m-acc-user">يوزر الحساب</Label>
+                  <Input
+                    id="m-acc-user"
+                    dir="ltr"
+                    value={accountUser}
+                    onChange={(e) => setAccountUser(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {kind === "script" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="m-script">كود السكربت</Label>
+                <Textarea
+                  id="m-script"
+                  dir="ltr"
+                  rows={5}
+                  className="font-mono text-[12px]"
+                  value={scriptText}
+                  onChange={(e) => setScriptText(e.target.value)}
+                />
+              </div>
+            )}
+
+            {kind === "file" && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="m-file">ملف المنتج (إلزامي)</Label>
+                <Input
+                  id="m-file"
+                  type="file"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {file ? `الملف: ${file.name}` : "الحجم الأقصى 50MB — يُسلَّم للمشتري تلقائياً بعد الشراء."}
+                </p>
+              </div>
+            )}
+
             <div className="sm:col-span-2">
               <Button type="submit" className="w-full font-display font-bold" disabled={addProduct.isPending}>
                 عرض المنتج
