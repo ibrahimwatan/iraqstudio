@@ -14,36 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      admin_audit_logs: {
-        Row: {
-          id: string
-          event_type: string
-          actor_user_id: string | null
-          target_user_id: string | null
-          username: string | null
-          created_at: string
-          metadata: Json
-        }
-        Insert: {
-          id?: string
-          event_type: string
-          actor_user_id?: string | null
-          target_user_id?: string | null
-          username?: string | null
-          created_at?: string
-          metadata?: Json
-        }
-        Update: {
-          id?: string
-          event_type?: string
-          actor_user_id?: string | null
-          target_user_id?: string | null
-          username?: string | null
-          created_at?: string
-          metadata?: Json
-        }
-        Relationships: []
-      }
       products: {
         Row: {
           active: boolean
