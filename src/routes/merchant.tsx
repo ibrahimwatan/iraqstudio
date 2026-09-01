@@ -152,8 +152,9 @@ function MerchantPanel() {
       setTitle("");
       setDescription("");
       setImageUrl("");
-      setAccountName("");
       setAccountUser("");
+      setAccountPass("");
+      setNoEmail(false);
       setScriptText("");
       setFile(null);
       invalidate();
