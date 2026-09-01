@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminwtniraqRouteImport } from './routes/adminwtniraq'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MerchantRouteImport } from './routes/merchant'
+import { Route as OrdersRouteImport } from './routes/orders'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const MerchantRoute = MerchantRouteImport.update({
   path: '/merchant',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/adminwtniraq': typeof AdminwtniraqRoute
   '/auth': typeof AuthRoute
   '/merchant': typeof MerchantRoute
+  '/orders': typeof OrdersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/adminwtniraq': typeof AdminwtniraqRoute
   '/auth': typeof AuthRoute
   '/merchant': typeof MerchantRoute
+  '/orders': typeof OrdersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/adminwtniraq': typeof AdminwtniraqRoute
   '/auth': typeof AuthRoute
   '/merchant': typeof MerchantRoute
+  '/orders': typeof OrdersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/adminwtniraq' | '/auth' | '/merchant'
+  fullPaths: '/' | '/adminwtniraq' | '/auth' | '/merchant' | '/orders'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/adminwtniraq' | '/auth' | '/merchant'
-  id: '__root__' | '/' | '/adminwtniraq' | '/auth' | '/merchant'
+  to: '/' | '/adminwtniraq' | '/auth' | '/merchant' | '/orders'
+  id: '__root__' | '/' | '/adminwtniraq' | '/auth' | '/merchant' | '/orders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   AdminwtniraqRoute: typeof AdminwtniraqRoute
   AuthRoute: typeof AuthRoute
   MerchantRoute: typeof MerchantRoute
+  OrdersRoute: typeof OrdersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MerchantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminwtniraqRoute: AdminwtniraqRoute,
   AuthRoute: AuthRoute,
   MerchantRoute: MerchantRoute,
+  OrdersRoute: OrdersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
