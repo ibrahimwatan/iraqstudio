@@ -325,36 +325,6 @@ function AdminPanel() {
 
         <section className="panel p-5 rise">
           <SectionTitle
-            icon={<ClipboardList className="size-4 text-primary" />}
-            title="سجل نشاط الإدارة"
-            hint="آخر عمليات إنشاء الحسابات وإجراءات الإدارة"
-          />
-          <div className="mt-4 space-y-2">
-            {logs.isLoading && <p className="text-[12px] text-muted-foreground">جاري تحميل السجل...</p>}
-            {logs.isError && <p className="text-[12px] text-destructive">تعذر تحميل سجل النشاط.</p>}
-            {logs.data?.length === 0 && (
-              <p className="text-[12px] text-muted-foreground">لا توجد عمليات مسجلة بعد.</p>
-            )}
-            {logs.data?.map((log) => (
-              <div key={log.id} className="rounded-lg border border-border bg-elevated px-3 py-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-display text-[12px] font-bold">{auditEventLabel(log.event_type)}</span>
-                  <span dir="ltr" className="text-[10px] text-muted-foreground">
-                    {new Date(log.created_at).toLocaleString("ar-IQ")}
-                  </span>
-                </div>
-                {log.username && (
-                  <p dir="ltr" className="mt-1 text-[11px] text-muted-foreground">
-                    username: {log.username}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="panel p-5 rise">
-          <SectionTitle
             icon={<Package className="size-4 text-muted-foreground" />}
             title="المنتجات المعروضة"
             hint="للمراجعة والحذف فقط — الإضافة من لوحة التاجر"
