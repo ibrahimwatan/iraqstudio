@@ -213,8 +213,12 @@ function MerchantPanel() {
                 toast.error("اكتب اسم المنتج");
                 return;
               }
-              if (kind === "account" && (!accountName.trim() || !accountUser.trim())) {
-                toast.error("اكتب اسم ويوزر الحساب");
+              if (kind === "account" && (!accountUser.trim() || !accountPass.trim())) {
+                toast.error("اكتب يوزر وباسورد الحساب");
+                return;
+              }
+              if (kind === "account" && !noEmail) {
+                toast.error("لازم تأكد أن الحساب غير مربوط بإيميل");
                 return;
               }
               if (kind === "script" && !scriptText.trim()) {
