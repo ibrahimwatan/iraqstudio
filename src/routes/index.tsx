@@ -172,6 +172,9 @@ function Storefront() {
               </a>
             </Button>
           )}
+          <Button asChild variant="outline" className="mt-3 me-2 font-display font-bold">
+            <Link to="/orders">عرض سجل الشراء والشات</Link>
+          </Button>
           {!delivery.text && !delivery.downloadUrl && (
             <p className="mt-2 text-[12px] text-muted-foreground">
               تواصل معنا في الديسكورد لإكمال التسليم.
