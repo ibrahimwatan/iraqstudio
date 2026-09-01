@@ -35,6 +35,9 @@ type Purchase = {
   product_images: string[];
   product_image_urls: string[];
   price: number;
+  original_price: number;
+  discount_code: string | null;
+  discount_percent: number;
   created_at: string;
   chat_opened_at: string | null;
   chat_expires_at: string | null;
@@ -106,7 +109,7 @@ function OrdersPage() {
       const full = await supabase
         .from("purchases")
         .select(
-          "id, user_id, product_id, merchant_id, product_title, product_description, product_category, product_images, price, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
+          "id, user_id, product_id, merchant_id, product_title, product_description, product_category, product_images, price, original_price, discount_code, discount_percent, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
         )
         .order("created_at", { ascending: false });
 
@@ -126,6 +129,9 @@ function OrdersPage() {
           product_category: null,
           product_images: [],
           product_image_urls: [],
+          original_price: purchase.price,
+          discount_code: null,
+          discount_percent: 0,
           chat_opened_at: purchase.chat_expires_at ? purchase.created_at : null,
         })) as PurchaseRow[];
         return decoratePurchases(rowsWithDelivery);
@@ -145,6 +151,9 @@ function OrdersPage() {
         product_category: null,
         product_images: [],
         product_image_urls: [],
+        original_price: purchase.price,
+        discount_code: null,
+        discount_percent: 0,
         chat_opened_at: null,
         chat_expires_at: null,
         delivery_text: null,
@@ -227,10 +236,17 @@ function OrderCard({ p }: { p: Purchase }) {
             {new Date(p.created_at).toLocaleString("ar-IQ")}
           </p>
         </div>
-        <span className="flex items-center gap-1.5 font-mono text-[13px] font-semibold text-coin-soft">
-          <Coins className="size-3.5 text-coin" />
-          {formatCoins(p.price)}
-        </span>
+        <div className="text-end">
+          <span className="flex items-center justify-end gap-1.5 font-mono text-[13px] font-semibold text-coin-soft">
+            <Coins className="size-3.5 text-coin" />
+            {formatCoins(p.price)}
+          </span>
+          {p.discount_percent > 0 && (
+            <p className="mt-1 text-[10px] text-success">
+              خصم {p.discount_percent}% ({p.discount_code}) · قبل الخصم {formatCoins(p.original_price)}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mt-3 grid gap-2 rounded-lg border border-border bg-elevated p-3 text-[11px] sm:grid-cols-2">
