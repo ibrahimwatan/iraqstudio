@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Coins, Download, MessagesSquare, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { PRODUCT_FILES_BUCKET, formatCoins } from "@/lib/store";
+import { PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
 import { PurchaseChat } from "@/components/PurchaseChat";
 import { Button } from "@/components/ui/button";
 
@@ -29,17 +29,23 @@ type Purchase = {
   user_id: string;
   merchant_id: string | null;
   product_title: string;
+  product_description: string | null;
+  product_category: string | null;
+  product_images: string[];
+  product_image_urls: string[];
   price: number;
   created_at: string;
   chat_opened_at: string | null;
   chat_expires_at: string | null;
   delivery_text: string | null;
   delivery_file: string | null;
+  buyer_username: string | null;
+  merchant_username: string | null;
 };
 
 function OrdersPage() {
-  const { user, loading } = useAuth();
-  const [tab, setTab] = useState<"mine" | "sales">("mine");
+  const { user, loading, isAdmin } = useAuth();
+  const [tab, setTab] = useState<"mine" | "sales">(() => (isAdmin ? "sales" : "mine"));
 
   const rows = useQuery({
     queryKey: ["purchases"],
@@ -48,11 +54,35 @@ function OrdersPage() {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, user_id, merchant_id, product_title, price, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
+          "id, user_id, merchant_id, product_title, product_description, product_category, product_images, price, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Purchase[];
+
+      const baseRows = data as Array<Omit<Purchase, "product_image_urls" | "buyer_username" | "merchant_username">>;
+      const profileIds = [...new Set(baseRows.flatMap((purchase) => [purchase.user_id, purchase.merchant_id]).filter((id): id is string => Boolean(id)))];
+      const profileResult = profileIds.length
+        ? await supabase.from("profiles").select("id, username").in("id", profileIds)
+        : { data: [], error: null };
+      if (profileResult.error) throw profileResult.error;
+      const usernames = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile.username]));
+
+      return Promise.all(
+        baseRows.map(async (purchase) => {
+          const signed = purchase.product_images?.length
+            ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(purchase.product_images, 60 * 60)
+            : { data: [] };
+          const product_image_urls = (signed.data ?? [])
+            .map((image) => image.signedUrl)
+            .filter((url): url is string => Boolean(url));
+          return {
+            ...purchase,
+            product_image_urls,
+            buyer_username: usernames.get(purchase.user_id) ?? null,
+            merchant_username: purchase.merchant_id ? usernames.get(purchase.merchant_id) ?? null : null,
+          } satisfies Purchase;
+        }),
+      );
     },
   });
 
@@ -63,6 +93,7 @@ function OrdersPage() {
   const mine = all.filter((p) => p.user_id === user.id);
   const sales = all.filter((p) => p.user_id !== user.id);
   const list = tab === "mine" ? mine : sales;
+  const salesLabel = isAdmin ? "كل المشتريات" : "مبيعاتي";
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -79,7 +110,7 @@ function OrdersPage() {
       {sales.length > 0 && (
         <div className="mb-4 flex gap-2">
           <TabBtn active={tab === "mine"} onClick={() => setTab("mine")} label={`مشترياتي (${mine.length})`} />
-          <TabBtn active={tab === "sales"} onClick={() => setTab("sales")} label={`مبيعاتي (${sales.length})`} />
+          <TabBtn active={tab === "sales"} onClick={() => setTab("sales")} label={`${salesLabel} (${sales.length})`} />
         </div>
       )}
 
@@ -127,6 +158,25 @@ function OrderCard({ p }: { p: Purchase }) {
         </span>
       </div>
 
+      <div className="mt-3 grid gap-2 rounded-lg border border-border bg-elevated p-3 text-[11px] sm:grid-cols-2">
+        <p><span className="text-muted-foreground">رقم الطلب:</span> <span dir="ltr">{p.id}</span></p>
+        <p><span className="text-muted-foreground">القسم:</span> {p.product_category ? categoryLabel(p.product_category) : "غير محدد"}</p>
+        <p><span className="text-muted-foreground">المشتري:</span> {p.buyer_username ?? "غير معروف"}</p>
+        <p><span className="text-muted-foreground">التاجر:</span> {p.merchant_username ?? "غير معروف"}</p>
+      </div>
+
+      {p.product_image_urls.length > 0 && (
+        <div className="mt-3 flex gap-2 overflow-x-auto">
+          {p.product_image_urls.map((imageUrl) => (
+            <img key={imageUrl} src={imageUrl} alt="" className="size-20 shrink-0 rounded-lg object-cover" loading="lazy" />
+          ))}
+        </div>
+      )}
+
+      {p.product_description && (
+        <p className="mt-3 whitespace-pre-wrap text-[12px] text-muted-foreground">{p.product_description}</p>
+      )}
+
       {p.delivery_text && (
         <pre
           dir="ltr"
@@ -143,6 +193,10 @@ function OrderCard({ p }: { p: Purchase }) {
             {url ? "تحميل مرة أخرى" : "تحميل الملف"}
           </Button>
         )}
+
+        <p className="mt-2 w-full text-[11px] text-muted-foreground">
+          الشات يظهر هنا داخل الطلب — افتح «محادثة الشراء» للتواصل مع المشتري أو التاجر أو الإدارة.
+        </p>
         <Button size="sm" variant="outline" onClick={() => setShowChat((v) => !v)}>
           <MessagesSquare className="me-1.5 size-4" />
           {showChat ? "إخفاء المحادثة" : "محادثة الشراء"}
