@@ -12,6 +12,7 @@ import {
   DISCORD_URL,
   PRODUCT_FILES_BUCKET,
   PRODUCT_IMAGES_BUCKET,
+  MAX_PRODUCT_IMAGES,
   categoryLabel,
   formatCoins,
 } from "@/lib/store";
