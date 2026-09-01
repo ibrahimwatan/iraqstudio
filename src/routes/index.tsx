@@ -11,6 +11,7 @@ import {
   CATEGORIES,
   DISCORD_URL,
   PRODUCT_FILES_BUCKET,
+  PRODUCT_IMAGES_BUCKET,
   categoryLabel,
   formatCoins,
 } from "@/lib/store";
@@ -45,6 +46,8 @@ type Product = {
   price: number;
   stock: number;
   image_url: string | null;
+  images: string[];
+  imageUrls: string[];
 };
 
 function Storefront() {
@@ -202,11 +205,18 @@ function Storefront() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((p) => (
               <article key={p.id} className="panel flex flex-col overflow-hidden rise">
-                {p.image_url ? (
-                  <img src={p.image_url} alt={p.title} className="h-36 w-full object-cover" loading="lazy" />
+                {p.imageUrls[0] ? (
+                  <img src={p.imageUrls[0]} alt={p.title} className="h-36 w-full object-cover" loading="lazy" />
                 ) : (
                   <div className="grid h-36 w-full place-items-center bg-elevated">
                     <Package className="size-6 text-muted-foreground" />
+                  </div>
+                )}
+                {p.imageUrls.length > 1 && (
+                  <div className="flex gap-1.5 overflow-x-auto border-t border-border bg-elevated p-2">
+                    {p.imageUrls.slice(1, MAX_PRODUCT_IMAGES).map((imageUrl) => (
+                      <img key={imageUrl} src={imageUrl} alt="" className="size-10 shrink-0 rounded object-cover" loading="lazy" />
+                    ))}
                   </div>
                 )}
                 <div className="flex flex-1 flex-col gap-2 p-4">
