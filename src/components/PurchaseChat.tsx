@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Clock, Lock, Send } from "lucide-react";
@@ -12,7 +12,8 @@ export type ChatPurchase = {
   id: string;
   user_id: string;
   merchant_id: string | null;
-  chat_expires_at: string;
+  chat_opened_at: string | null;
+  chat_expires_at: string | null;
 };
 
 type Message = {
@@ -26,8 +27,31 @@ export function PurchaseChat({ purchase }: { purchase: ChatPurchase }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [body, setBody] = useState("");
-  const open = new Date(purchase.chat_expires_at).getTime() > Date.now();
-  const left = timeLeftLabel(purchase.chat_expires_at);
+  const [chatState, setChatState] = useState({
+    openedAt: purchase.chat_opened_at,
+    expiresAt: purchase.chat_expires_at,
+  });
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    let mounted = true;
+    void supabase.rpc("open_purchase_chat", { _purchase_id: purchase.id }).then(({ data, error }) => {
+      if (!error && data && mounted) {
+        setChatState({ openedAt: data.chat_opened_at, expiresAt: data.chat_expires_at });
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [purchase.id]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const open = Boolean(chatState.expiresAt && new Date(chatState.expiresAt).getTime() > now);
+  const left = chatState.expiresAt ? timeLeftLabel(chatState.expiresAt) : null;
 
   const messages = useQuery({
     queryKey: ["purchase-messages", purchase.id],
@@ -67,7 +91,12 @@ export function PurchaseChat({ purchase }: { purchase: ChatPurchase }) {
   return (
     <div className="mt-3 rounded-lg border border-border bg-elevated p-3">
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-        {open ? (
+        {!chatState.openedAt ? (
+          <>
+            <Clock className="size-3.5 text-muted-foreground" />
+            <span>جاري فتح المحادثة...</span>
+          </>
+        ) : open ? (
           <>
             <Clock className="size-3.5 text-success" />
             <span>المحادثة مفتوحة — تُغلق بعد {left}</span>
@@ -75,7 +104,7 @@ export function PurchaseChat({ purchase }: { purchase: ChatPurchase }) {
         ) : (
           <>
             <Lock className="size-3.5 text-destructive" />
-            <span>أُغلقت المحادثة (مرّت 24 ساعة على الشراء)</span>
+            <span>أُغلقت المحادثة (مرّت 24 ساعة على فتحها)</span>
           </>
         )}
       </div>
