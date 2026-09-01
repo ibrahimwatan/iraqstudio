@@ -121,7 +121,7 @@ function MerchantPanel() {
       let deliveryFile: string | null = null;
 
       if (kind === "account") {
-        deliveryText = `اسم الحساب: ${accountName.trim()}\nيوزر الحساب: ${accountUser.trim()}`;
+        deliveryText = `يوزر الحساب: ${accountUser.trim()}\nباسورد الحساب: ${accountPass.trim()}\nالحساب غير مربوط بإيميل ✅`;
       } else if (kind === "script") {
         deliveryText = scriptText.trim();
       } else if (kind === "file") {
@@ -152,8 +152,9 @@ function MerchantPanel() {
       setTitle("");
       setDescription("");
       setImageUrl("");
-      setAccountName("");
       setAccountUser("");
+      setAccountPass("");
+      setNoEmail(false);
       setScriptText("");
       setFile(null);
       invalidate();
@@ -212,8 +213,12 @@ function MerchantPanel() {
                 toast.error("اكتب اسم المنتج");
                 return;
               }
-              if (kind === "account" && (!accountName.trim() || !accountUser.trim())) {
-                toast.error("اكتب اسم ويوزر الحساب");
+              if (kind === "account" && (!accountUser.trim() || !accountPass.trim())) {
+                toast.error("اكتب يوزر وباسورد الحساب");
+                return;
+              }
+              if (kind === "account" && !noEmail) {
+                toast.error("لازم تأكد أن الحساب غير مربوط بإيميل");
                 return;
               }
               if (kind === "script" && !scriptText.trim()) {
@@ -278,10 +283,6 @@ function MerchantPanel() {
             {kind === "account" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="m-acc-name">اسم الحساب</Label>
-                  <Input id="m-acc-name" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="m-acc-user">يوزر الحساب</Label>
                   <Input
                     id="m-acc-user"
@@ -290,6 +291,24 @@ function MerchantPanel() {
                     onChange={(e) => setAccountUser(e.target.value)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="m-acc-pass">باسورد الحساب</Label>
+                  <Input
+                    id="m-acc-pass"
+                    dir="ltr"
+                    value={accountPass}
+                    onChange={(e) => setAccountPass(e.target.value)}
+                  />
+                </div>
+                <label className="flex items-center gap-2 sm:col-span-2 text-[12px]">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={noEmail}
+                    onChange={(e) => setNoEmail(e.target.checked)}
+                  />
+                  <span>أؤكد أن الحساب غير مربوط بأي إيميل (إلزامي)</span>
+                </label>
               </>
             )}
 
