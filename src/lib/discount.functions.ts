@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Discount codes intentionally use local server storage; Supabase is only used for the final purchase transaction.
 type AuthContext = { supabase: any; userId: string };
 
 async function assertAdmin(context: unknown) {
