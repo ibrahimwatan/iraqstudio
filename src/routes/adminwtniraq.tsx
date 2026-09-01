@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, ClipboardList, Coins, Download, Package, Receipt, Store, Trash2 } from "lucide-react";
+import { Ban, Coins, Download, Package, Receipt, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
@@ -23,16 +23,6 @@ export const Route = createFileRoute("/adminwtniraq")({
   component: AdminPage,
 });
 
-
-type AdminAuditLog = {
-  id: string;
-  event_type: string;
-  actor_user_id: string | null;
-  target_user_id: string | null;
-  username: string | null;
-  created_at: string;
-  metadata: Record<string, unknown>;
-};
 
 type AdminProduct = {
   id: string;
@@ -98,19 +88,6 @@ function AdminPanel() {
   const [coinUser, setCoinUser] = useState("");
   const [coinAmount, setCoinAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
-
-  const logs = useQuery({
-    queryKey: ["admin-audit-logs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("admin_audit_logs")
-        .select("id, event_type, actor_user_id, target_user_id, username, created_at, metadata")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return (data ?? []) as AdminAuditLog[];
-    },
-  });
 
   const products = useQuery({
     queryKey: ["admin-products"],
@@ -438,21 +415,6 @@ function SectionTitle({
       </span>
     </div>
   );
-}
-
-function auditEventLabel(eventType: string) {
-  switch (eventType) {
-    case "account_created":
-      return "إنشاء حساب جديد";
-    case "coins_changed":
-      return "تغيير رصيد العملات";
-    case "user_banned":
-      return "حظر عضو";
-    case "user_unbanned":
-      return "إلغاء حظر عضو";
-    default:
-      return eventType;
-  }
 }
 
 function readError(e: unknown) {
