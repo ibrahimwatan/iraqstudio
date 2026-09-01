@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Ban, Coins, Download, Package, Receipt, Store, Tag, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { createLocalDiscountCode, deleteLocalDiscountCode, listLocalDiscountCodes } from "@/lib/discount.functions";
 import { useAuth } from "@/lib/useAuth";
 import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -94,14 +95,7 @@ function AdminPanel() {
 
   const discountCodes = useQuery({
     queryKey: ["admin-discount-codes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("discount_codes")
-        .select("id, code, discount_percent, active, created_at")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listLocalDiscountCodes(),
   });
 
 
@@ -200,17 +194,12 @@ function AdminPanel() {
 
 
   const addDiscountCode = useMutation({
-    mutationFn: async () => {
-      const code = discountCode.trim().toUpperCase().replace(/\s+/g, "");
-      const percent = Number(discountPercent);
-      if (!/^[A-Z0-9_-]{3,32}$/.test(code)) throw new Error("اكتب كوداً من 3 إلى 32 حرفاً أو رقماً");
-      if (!Number.isFinite(percent) || percent <= 0 || percent > 100) throw new Error("نسبة الخصم يجب أن تكون بين 1 و100");
-      const { error } = await supabase.from("discount_codes").insert({
-        code,
-        discount_percent: percent,
-      });
-      if (error) throw error;
-    },
+    mutationFn: () => createLocalDiscountCode({
+      data: {
+        code: discountCode,
+        discountPercent: Number(discountPercent),
+      },
+    }),
     onSuccess: () => {
       toast.success("تمت إضافة كود الخصم");
       setDiscountCode("");
@@ -220,10 +209,7 @@ function AdminPanel() {
   });
 
   const removeDiscountCode = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("discount_codes").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => deleteLocalDiscountCode({ data: { id } }),
     onSuccess: () => {
       toast.success("تم حذف كود الخصم");
       void qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
@@ -541,13 +527,14 @@ function readError(e: unknown) {
         : "حدث خطأ غير معروف";
   const code = typeof error?.code === "string" ? error.code : "";
   const msg = rawMessage.toLowerCase();
-  if (msg.includes("discount_codes") && (msg.includes("does not exist") || msg.includes("schema cache") || code === "pgrst205" || code === "42p01")) {
-    return "نظام أكواد الخصم غير مفعّل في قاعدة البيانات بعد. طبّق migration: 20260901160000_discount_codes.sql";
-  }
+  if (msg.includes("local_discount_storage")) return "تعذر الوصول إلى قاعدة أكواد الخصم المحلية";
+  if (msg.includes("invalid_discount_code_format")) return "اكتب كوداً من 3 إلى 32 حرفاً أو رقماً";
+  if (msg.includes("invalid_discount_percent")) return "نسبة الخصم يجب أن تكون بين 1 و100";
+  if (msg.includes("discount_code_exists")) return "هذا الكود موجود مسبقاً";
+  if (msg.includes("discount_code_not_found")) return "كود الخصم غير موجود";
   if (code === "23505" || msg.includes("duplicate key") || msg.includes("already exists")) return "هذا الكود موجود مسبقاً";
   if (code === "42501" || msg.includes("row-level security") || msg.includes("permission denied")) return "ليس لديك صلاحية لتنفيذ هذه العملية";
   if (msg.includes("user_not_found")) return "لا يوجد عضو بهذا اليوزر";
   if (msg.includes("not_admin")) return "لا تملك صلاحية الإدارة";
-  if (msg.includes("invalid_discount_code")) return "كود الخصم غير صالح أو محذوف";
   return rawMessage;
 }
