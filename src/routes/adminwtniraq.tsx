@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, Coins, Download, Package, Receipt, Store, Trash2 } from "lucide-react";
+import { Ban, Coins, Download, Package, Receipt, Store, Trash2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
