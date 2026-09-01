@@ -11,7 +11,7 @@ export type LocalDiscountCode = {
 };
 
 const databasePath = process.env.LOCAL_DISCOUNT_DB_PATH ?? join(process.cwd(), "data", "discount-codes.json");
-let writeQueue = Promise.resolve();
+let writeQueue: Promise<void> = Promise.resolve();
 
 function normalizeCode(value: string) {
   return value.trim().toUpperCase().replace(/\s+/g, "");
@@ -53,7 +53,7 @@ export async function addCode(value: string, discountPercent: number) {
   }
 
   let created: LocalDiscountCode | null = null;
-  writeQueue = writeQueue.then(async () => {
+  const operation = writeQueue.then(async () => {
     const codes = await readCodes();
     if (codes.some((item) => item.code === code)) throw new Error("discount_code_exists");
     created = {
@@ -65,19 +65,21 @@ export async function addCode(value: string, discountPercent: number) {
     };
     await saveCodes([...codes, created]);
   });
-  await writeQueue;
+  writeQueue = operation.then(() => undefined, () => undefined);
+  await operation;
   if (!created) throw new Error("local_discount_storage");
   return created;
 }
 
 export async function removeCode(id: string) {
   let removed = false;
-  writeQueue = writeQueue.then(async () => {
+  const operation = writeQueue.then(async () => {
     const codes = await readCodes();
     const next = codes.filter((item) => item.id !== id);
     removed = next.length !== codes.length;
     if (removed) await saveCodes(next);
   });
-  await writeQueue;
+  writeQueue = operation.then(() => undefined, () => undefined);
+  await operation;
   if (!removed) throw new Error("discount_code_not_found");
 }
