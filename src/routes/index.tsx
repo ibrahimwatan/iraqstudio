@@ -131,7 +131,12 @@ function Storefront() {
     },
     onSuccess: (d, p) => {
       toast.success(`تم شراء ${p.title} بنجاح`);
-      setDelivery({ title: p.title, text: d.text, downloadUrl: d.downloadUrl });
+      setDelivery({
+        title: p.title,
+        text: d.text,
+        downloadUrl: d.downloadUrl,
+        purchase: d.purchase,
+      });
       void refresh();
       void qc.invalidateQueries({ queryKey: ["products"] });
     },
@@ -203,7 +208,11 @@ function Storefront() {
           </Button>
           <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
             <p className="mb-2 font-display text-[13px] font-bold">شات الطلب</p>
-            <PurchaseChat purchase={delivery.purchase} />
+            {delivery.purchase ? (
+              <PurchaseChat purchase={delivery.purchase} />
+            ) : (
+              <p className="text-[12px] text-muted-foreground">تم تسجيل الطلب. افتح سجل الشراء لبدء المحادثة.</p>
+            )}
           </div>
           {!delivery.text && !delivery.downloadUrl && (
             <p className="mt-2 text-[12px] text-muted-foreground">
