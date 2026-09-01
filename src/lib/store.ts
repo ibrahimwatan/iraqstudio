@@ -43,3 +43,29 @@ export function usernameToEmail(raw: string) {
 export function formatCoins(n: number) {
   return new Intl.NumberFormat("en-US").format(n);
 }
+
+export const PRODUCT_IMAGES_BUCKET = "product-images";
+export const MAX_PRODUCT_IMAGES = 5;
+export const CHAT_HOURS = 24;
+
+/** روابط مؤقتة لصور المنتجات (الباكت خاص) */
+export async function signImages(
+  storage: {
+    from: (b: string) => {
+      createSignedUrls: (paths: string[], exp: number) => Promise<{ data: { signedUrl: string }[] | null }>;
+    };
+  },
+  paths: string[],
+) {
+  if (paths.length === 0) return [];
+  const res = await storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(paths, 60 * 60);
+  return (res.data ?? []).map((r) => r.signedUrl);
+}
+
+export function timeLeftLabel(iso: string) {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return null;
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  return h > 0 ? `${h} ساعة و${m} دقيقة` : `${m} دقيقة`;
+}
