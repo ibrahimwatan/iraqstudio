@@ -283,10 +283,6 @@ function MerchantPanel() {
             {kind === "account" && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="m-acc-name">اسم الحساب</Label>
-                  <Input id="m-acc-name" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="m-acc-user">يوزر الحساب</Label>
                   <Input
                     id="m-acc-user"
@@ -295,6 +291,24 @@ function MerchantPanel() {
                     onChange={(e) => setAccountUser(e.target.value)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="m-acc-pass">باسورد الحساب</Label>
+                  <Input
+                    id="m-acc-pass"
+                    dir="ltr"
+                    value={accountPass}
+                    onChange={(e) => setAccountPass(e.target.value)}
+                  />
+                </div>
+                <label className="flex items-center gap-2 sm:col-span-2 text-[12px]">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={noEmail}
+                    onChange={(e) => setNoEmail(e.target.checked)}
+                  />
+                  <span>أؤكد أن الحساب غير مربوط بأي إيميل (إلزامي)</span>
+                </label>
               </>
             )}
 
