@@ -95,13 +95,28 @@ function AdminPanel() {
   const products = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const full = await supabase
         .from("products")
         .select("id, title, description, category, price, stock, active, created_at, created_by, image_url, images, delivery_text, delivery_file")
         .order("created_at", { ascending: false });
-      if (error) throw error;
 
-      const rows = data as Array<Omit<AdminProduct, "imageUrls" | "merchant_username">>;
+      let rows: Array<Omit<AdminProduct, "imageUrls" | "merchant_username">>;
+      if (!full.error) {
+        rows = full.data as Array<Omit<AdminProduct, "imageUrls" | "merchant_username">>;
+      } else {
+        const legacy = await supabase
+          .from("products")
+          .select("id, title, description, category, price, stock, active, created_at, created_by, image_url")
+          .order("created_at", { ascending: false });
+        if (legacy.error) throw new Error("تعذر تحميل المنتجات: " + full.error.message);
+        rows = (legacy.data ?? []).map((product) => ({
+          ...product,
+          images: [],
+          delivery_text: null,
+          delivery_file: null,
+        })) as Array<Omit<AdminProduct, "imageUrls" | "merchant_username">>;
+      }
+
       const merchantIds = [...new Set(rows.map((product) => product.created_by).filter((id): id is string => Boolean(id)))];
       const profileResult = merchantIds.length
         ? await supabase.from("profiles").select("id, username").in("id", merchantIds)
@@ -111,8 +126,9 @@ function AdminPanel() {
 
       return Promise.all(
         rows.map(async (product) => {
-          const signed = product.images?.length
-            ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(product.images, 60 * 60)
+          const imagePaths = product.images ?? [];
+          const signed = imagePaths.length
+            ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(imagePaths, 60 * 60)
             : { data: [] };
           const imageUrls = (signed.data ?? [])
             .map((image) => image.signedUrl)
