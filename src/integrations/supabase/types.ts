@@ -118,11 +118,41 @@ export type Database = {
           },
         ]
       }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          discount_percent: number
+          id: string
+          active: boolean
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          discount_percent: number
+          id?: string
+          active?: boolean
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          discount_percent?: number
+          id?: string
+          active?: boolean
+        }
+        Relationships: []
+      }
       purchases: {
         Row: {
           chat_opened_at: string | null
           chat_expires_at: string | null
           created_at: string
+          discount_code: string | null
+          discount_percent: number
+          original_price: number
           delivery_file: string | null
           delivery_text: string | null
           id: string
@@ -139,6 +169,12 @@ export type Database = {
           chat_opened_at?: string | null
           chat_expires_at?: string | null
           created_at?: string
+          discount_code?: string | null
+          discount_percent?: number
+          original_price?: number
+          discount_code?: string | null
+          discount_percent?: number
+          original_price?: number
           delivery_file?: string | null
           delivery_text?: string | null
           id?: string
@@ -253,12 +289,15 @@ export type Database = {
         }
       }
       buy_product: {
-        Args: { _product_id: string }
+        Args: { _discount_code?: string | null; _product_id: string }
         Returns: {
           chat_opened_at: string | null
           chat_expires_at: string | null
           created_at: string
+          discount_code: string | null
+          discount_percent: number
           delivery_file: string | null
+          original_price: number
           delivery_text: string | null
           id: string
           merchant_id: string | null
@@ -283,7 +322,10 @@ export type Database = {
           chat_opened_at: string | null
           chat_expires_at: string | null
           created_at: string
+          discount_code: string | null
+          discount_percent: number
           delivery_file: string | null
+          original_price: number
           delivery_text: string | null
           id: string
           merchant_id: string | null
