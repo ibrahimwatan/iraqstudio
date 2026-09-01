@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Coins, LifeBuoy, MessageCircle, Package, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { buyProductWithLocalDiscount } from "@/lib/discount.functions";
 import {
   BRAND_AR,
   BRAND_EN,
@@ -18,7 +17,6 @@ import {
 } from "@/lib/store";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PurchaseChat } from "@/components/PurchaseChat";
 import heroImg from "@/assets/hero.jpg";
 
@@ -57,16 +55,11 @@ function Storefront() {
   const { user, profile, refresh } = useAuth();
   const qc = useQueryClient();
   const [cat, setCat] = useState<string>("all");
-  const [discountProduct, setDiscountProduct] = useState<Product | null>(null);
-  const [discountCode, setDiscountCode] = useState("");
   const [delivery, setDelivery] = useState<{
     title: string;
     text: string | null;
     downloadUrl: string | null;
-    originalPrice: number;
     paidPrice: number;
-    discountPercent: number;
-    discountCode: string | null;
     purchase: {
       id: string;
       user_id: string;
@@ -106,13 +99,11 @@ function Storefront() {
   });
 
   const buy = useMutation({
-    mutationFn: async ({ product, code }: { product: Product; code: string }) => {
-      const row = await buyProductWithLocalDiscount({
-        data: {
-          productId: product.id,
-          code: code.trim() || null,
-        },
+    mutationFn: async ({ product }: { product: Product }) => {
+      const { data: row, error } = await supabase.rpc("buy_product", {
+        _product_id: product.id,
       });
+      if (error) throw error;
       let downloadUrl: string | null = null;
       if (row?.delivery_file) {
         const signed = await supabase.storage
@@ -123,10 +114,7 @@ function Storefront() {
       return {
         text: row?.delivery_text ?? null,
         downloadUrl,
-        originalPrice: row?.original_price ?? product.price,
         paidPrice: row?.price ?? product.price,
-        discountPercent: row?.discount_percent ?? 0,
-        discountCode: row?.discount_code ?? null,
         purchase: {
           id: row.id,
           user_id: row.user_id,
@@ -137,19 +125,14 @@ function Storefront() {
       };
     },
     onSuccess: (d, vars) => {
-      toast.success(d.discountPercent > 0 ? `تم شراء ${vars.product.title} مع خصم ${d.discountPercent}%` : `تم شراء ${vars.product.title} بنجاح`);
+      toast.success("تم شراء " + vars.product.title + " بنجاح");
       setDelivery({
         title: vars.product.title,
         text: d.text,
         downloadUrl: d.downloadUrl,
-        originalPrice: d.originalPrice,
         paidPrice: d.paidPrice,
-        discountPercent: d.discountPercent,
-        discountCode: d.discountCode,
         purchase: d.purchase,
       });
-      setDiscountProduct(null);
-      setDiscountCode("");
       void refresh();
       void qc.invalidateQueries({ queryKey: ["products"] });
     },
@@ -165,15 +148,12 @@ function Storefront() {
           ? "رصيد Iraq Coins غير كافي"
           : msg.includes("out_of_stock")
             ? "الكمية غير متوفرة حالياً"
-            : msg.includes("invalid_discount_code")
-              ? "كود الخصم غير صالح أو محذوف"
-              : msg.includes("banned")
-                ? "حسابك محظور من الشراء"
-                : msg,
+            : msg.includes("banned")
+              ? "حسابك محظور من الشراء"
+              : msg,
       );
     },
   });
-
 
   const list = (products.data ?? []).filter((p) => cat === "all" || p.category === cat);
 
@@ -210,9 +190,6 @@ function Storefront() {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
             <span>المدفوع: {formatCoins(delivery.paidPrice)} عملة</span>
-            {delivery.discountPercent > 0 && (
-              <span className="text-success">خصم {delivery.discountPercent}% عبر {delivery.discountCode}</span>
-            )}
           </div>
           {delivery.text && (
             <pre
@@ -310,32 +287,7 @@ function Storefront() {
                     <p className="line-clamp-3 text-[12px] text-muted-foreground">{p.description}</p>
                   )}
 
-                  {discountProduct?.id === p.id && (
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-                      <p className="font-display text-[12px] font-bold">كود خصم (اختياري)</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <Input
-                          dir="ltr"
-                          value={discountCode}
-                          onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                          placeholder="FAMOUS10"
-                          className="min-w-36 flex-1 font-mono uppercase"
-                          maxLength={32}
-                        />
-                        <Button
-                          size="sm"
-                          disabled={buy.isPending}
-                          onClick={() => buy.mutate({ product: p, code: discountCode })}
-                        >
-                          تأكيد الشراء
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setDiscountProduct(null)}>
-                          إلغاء
-                        </Button>
-                      </div>
-                      <p className="mt-1 text-[10px] text-muted-foreground">اتركه فارغاً للشراء بالسعر الكامل.</p>
-                    </div>
-                  )}
+
 
                   <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                     <span className="flex items-center gap-1.5 font-mono text-[13px] font-semibold text-coin-soft">
@@ -345,13 +297,10 @@ function Storefront() {
                     <Button
                       size="sm"
                       disabled={p.stock <= 0 || buy.isPending}
-                      onClick={() => {
-                        setDiscountProduct(p);
-                        setDiscountCode("");
-                      }}
+                      onClick={() => buy.mutate({ product: p })}
                       className="font-display font-bold"
                     >
-                      {p.stock <= 0 ? "نفدت الكمية" : discountProduct?.id === p.id ? "تأكيد أدناه" : "شراء"}
+                      {p.stock <= 0 ? "نفدت الكمية" : "شراء"}
                     </Button>
                   </div>
                   {profile && profile.coins < p.price && p.stock > 0 && (
