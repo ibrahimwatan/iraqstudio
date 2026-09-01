@@ -7,7 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import {
   PRODUCT_CATEGORIES,
+  MAX_PRODUCT_IMAGES,
   PRODUCT_FILES_BUCKET,
+  PRODUCT_IMAGES_BUCKET,
   categoryLabel,
   deliveryKind,
   formatCoins,
@@ -93,6 +95,8 @@ function MerchantPanel() {
   const [noEmail, setNoEmail] = useState(false);
   const [scriptText, setScriptText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageInputKey, setImageInputKey] = useState(0);
 
   const kind = deliveryKind(category);
 
@@ -119,33 +123,54 @@ function MerchantPanel() {
     mutationFn: async () => {
       let deliveryText: string | null = null;
       let deliveryFile: string | null = null;
+      const imagePaths: string[] = [];
 
-      if (kind === "account") {
-        deliveryText = `يوزر الحساب: ${accountUser.trim()}\nباسورد الحساب: ${accountPass.trim()}\nالحساب غير مربوط بإيميل ✅`;
-      } else if (kind === "script") {
-        deliveryText = scriptText.trim();
-      } else if (kind === "file") {
-        const safe = file!.name.replace(/[^\w.\-]+/g, "_");
-        const path = `${user!.id}/${crypto.randomUUID()}-${safe}`;
-        const up = await supabase.storage.from(PRODUCT_FILES_BUCKET).upload(path, file!, {
-          upsert: false,
+      try {
+        if (kind === "account") {
+          deliveryText = `يوزر الحساب: ${accountUser.trim()}\nباسورد الحساب: ${accountPass.trim()}\nالحساب غير مربوط بإيميل ✅`;
+        } else if (kind === "script") {
+          deliveryText = scriptText.trim();
+        } else if (kind === "file") {
+          const safe = file!.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${user!.id}/${crypto.randomUUID()}-${safe}`;
+          const up = await supabase.storage.from(PRODUCT_FILES_BUCKET).upload(path, file!, {
+            upsert: false,
+            contentType: file!.type || "application/octet-stream",
+          });
+          if (up.error) throw up.error;
+          deliveryFile = path;
+        }
+
+        for (const image of imageFiles) {
+          if (image.size > 5 * 1024 * 1024) throw new Error("كل صورة يجب أن تكون أقل من 5 ميغابايت");
+          const safe = image.name.replace(/[^\w.\-]+/g, "_");
+          const path = `${user!.id}/${crypto.randomUUID()}-${safe}`;
+          const up = await supabase.storage.from(PRODUCT_IMAGES_BUCKET).upload(path, image, {
+            upsert: false,
+            contentType: image.type || "image/*",
+          });
+          if (up.error) throw up.error;
+          imagePaths.push(path);
+        }
+
+        const { error } = await supabase.from("products").insert({
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          price: Number(price) || 0,
+          stock: Number(stock) || 1,
+          image_url: imageUrl.trim() || null,
+          images: imagePaths,
+          created_by: user!.id,
+          delivery_text: deliveryText,
+          delivery_file: deliveryFile,
         });
-        if (up.error) throw up.error;
-        deliveryFile = path;
+        if (error) throw error;
+      } catch (error) {
+        if (deliveryFile) await supabase.storage.from(PRODUCT_FILES_BUCKET).remove([deliveryFile]);
+        if (imagePaths.length > 0) await supabase.storage.from(PRODUCT_IMAGES_BUCKET).remove(imagePaths);
+        throw error;
       }
-
-      const { error } = await supabase.from("products").insert({
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        price: Number(price) || 0,
-        stock: Number(stock) || 1,
-        image_url: imageUrl.trim() || null,
-        created_by: user!.id,
-        delivery_text: deliveryText,
-        delivery_file: deliveryFile,
-      });
-      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("تم عرض منتجك في المتجر");
@@ -157,6 +182,8 @@ function MerchantPanel() {
       setNoEmail(false);
       setScriptText("");
       setFile(null);
+      setImageFiles([]);
+      setImageInputKey((key) => key + 1);
       invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : String(e)),
@@ -278,6 +305,27 @@ function MerchantPanel() {
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://..."
               />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="m-images">صور المنتج (حتى 5 صور)</Label>
+              <Input
+                key={imageInputKey}
+                id="m-images"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files ?? []);
+                  if (selected.length > MAX_PRODUCT_IMAGES) {
+                    toast.error("تقدر ترفع 5 صور كحد أقصى");
+                  }
+                  setImageFiles(selected.slice(0, MAX_PRODUCT_IMAGES));
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {imageFiles.length > 0 ? `تم اختيار ${imageFiles.length} صور` : "اختياري — كل صورة بحد أقصى 5MB."}
+              </p>
             </div>
 
             {kind === "account" && (
