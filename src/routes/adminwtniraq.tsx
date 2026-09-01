@@ -385,7 +385,11 @@ function AdminPanel() {
           <p className="mt-2 text-[11px] text-muted-foreground">مثال: FAMOUS10 يعطي خصم 10% على أي منتج.</p>
           <div className="mt-4 space-y-2">
             {discountCodes.isLoading && <p className="text-[12px] text-muted-foreground">جاري تحميل الأكواد...</p>}
-            {discountCodes.isError && <p className="text-[12px] text-destructive">تعذر تحميل أكواد الخصم.</p>}
+            {discountCodes.isError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-[12px] text-destructive">
+                {readError(discountCodes.error)}
+              </div>
+            )}
             {discountCodes.data?.length === 0 && (
               <p className="text-[12px] text-muted-foreground">لا توجد أكواد خصم حالياً.</p>
             )}
@@ -527,8 +531,23 @@ function SectionTitle({
 }
 
 function readError(e: unknown) {
-  const msg = e instanceof Error ? e.message : String(e);
+  const error = e as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown } | null;
+  const rawMessage = e instanceof Error
+    ? e.message
+    : error && typeof error.message === "string"
+      ? error.message
+      : typeof e === "string"
+        ? e
+        : "حدث خطأ غير معروف";
+  const code = typeof error?.code === "string" ? error.code : "";
+  const msg = rawMessage.toLowerCase();
+  if (msg.includes("discount_codes") && (msg.includes("does not exist") || msg.includes("schema cache") || code === "pgrst205" || code === "42p01")) {
+    return "نظام أكواد الخصم غير مفعّل في قاعدة البيانات بعد. طبّق migration: 20260901160000_discount_codes.sql";
+  }
+  if (code === "23505" || msg.includes("duplicate key") || msg.includes("already exists")) return "هذا الكود موجود مسبقاً";
+  if (code === "42501" || msg.includes("row-level security") || msg.includes("permission denied")) return "ليس لديك صلاحية لتنفيذ هذه العملية";
   if (msg.includes("user_not_found")) return "لا يوجد عضو بهذا اليوزر";
   if (msg.includes("not_admin")) return "لا تملك صلاحية الإدارة";
-  return msg;
+  if (msg.includes("invalid_discount_code")) return "كود الخصم غير صالح أو محذوف";
+  return rawMessage;
 }
