@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, Coins, Download, Package, Receipt, Store, Trash2 } from "lucide-react";
+import { Ban, Coins, Download, Package, Receipt, Store, Tag, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
@@ -88,7 +88,21 @@ function AdminPanel() {
   const [coinUser, setCoinUser] = useState("");
   const [coinAmount, setCoinAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("10");
 
+
+  const discountCodes = useQuery({
+    queryKey: ["admin-discount-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("discount_codes")
+        .select("id, code, discount_percent, active, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
 
 
 
@@ -184,6 +198,38 @@ function AdminPanel() {
     onError: (e) => toast.error(readError(e)),
   });
 
+
+  const addDiscountCode = useMutation({
+    mutationFn: async () => {
+      const code = discountCode.trim().toUpperCase().replace(/\s+/g, "");
+      const percent = Number(discountPercent);
+      if (!/^[A-Z0-9_-]{3,32}$/.test(code)) throw new Error("اكتب كوداً من 3 إلى 32 حرفاً أو رقماً");
+      if (!Number.isFinite(percent) || percent <= 0 || percent > 100) throw new Error("نسبة الخصم يجب أن تكون بين 1 و100");
+      const { error } = await supabase.from("discount_codes").insert({
+        code,
+        discount_percent: percent,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تمت إضافة كود الخصم");
+      setDiscountCode("");
+      void qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
+
+  const removeDiscountCode = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("discount_codes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم حذف كود الخصم");
+      void qc.invalidateQueries({ queryKey: ["admin-discount-codes"] });
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
 
 
 
@@ -300,6 +346,66 @@ function AdminPanel() {
             >
               سحب الصفة
             </Button>
+          </div>
+        </section>
+
+        <section className="panel p-5 rise">
+          <SectionTitle
+            icon={<Tag className="size-4 text-primary" />}
+            title="أكواد الخصم"
+            hint="تطبق على جميع المنتجات"
+          />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Input
+              dir="ltr"
+              value={discountCode}
+              onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+              placeholder="FAMOUS10"
+              maxLength={32}
+              className="min-w-40 flex-1 font-mono uppercase"
+            />
+            <Input
+              dir="ltr"
+              type="number"
+              min={1}
+              max={100}
+              value={discountPercent}
+              onChange={(e) => setDiscountPercent(e.target.value)}
+              className="w-28"
+              aria-label="نسبة الخصم"
+            />
+            <span className="self-center text-[12px] text-muted-foreground">%</span>
+            <Button
+              disabled={!discountCode.trim() || addDiscountCode.isPending}
+              onClick={() => addDiscountCode.mutate()}
+            >
+              إضافة كود
+            </Button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">مثال: FAMOUS10 يعطي خصم 10% على أي منتج.</p>
+          <div className="mt-4 space-y-2">
+            {discountCodes.isLoading && <p className="text-[12px] text-muted-foreground">جاري تحميل الأكواد...</p>}
+            {discountCodes.isError && <p className="text-[12px] text-destructive">تعذر تحميل أكواد الخصم.</p>}
+            {discountCodes.data?.length === 0 && (
+              <p className="text-[12px] text-muted-foreground">لا توجد أكواد خصم حالياً.</p>
+            )}
+            {discountCodes.data?.map((discount) => (
+              <div key={discount.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-elevated px-3 py-2.5">
+                <div>
+                  <p dir="ltr" className="font-mono text-[13px] font-bold">{discount.code}</p>
+                  <p className="text-[11px] text-muted-foreground">خصم {discount.discount_percent}% · {new Date(discount.created_at).toLocaleDateString("ar-IQ")}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="حذف كود الخصم"
+                  disabled={removeDiscountCode.isPending}
+                  onClick={() => removeDiscountCode.mutate(discount.id)}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
           </div>
         </section>
 
