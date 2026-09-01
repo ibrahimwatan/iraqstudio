@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Copy, LogOut, ShieldCheck, Store } from "lucide-react";
+import { Copy, LogOut, Receipt, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/useAuth";
 import { BRAND_AR, BRAND_EN, formatCoins } from "@/lib/store";
@@ -49,6 +49,12 @@ export function SiteHeader() {
                 </span>
                 <span className="text-[10px] text-muted-foreground">عملة</span>
               </span>
+
+              <Button asChild variant="outline" size="icon" aria-label="سجل المعاملات">
+                <Link to="/orders">
+                  <Receipt className="size-4" />
+                </Link>
+              </Button>
 
               {isMerchant && (
                 <Button asChild variant="outline" size="icon" aria-label="لوحة التاجر">
