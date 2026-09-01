@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Coins, LifeBuoy, MessageCircle, Package, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
+import { buyProductWithLocalDiscount } from "@/lib/discount.functions";
 import {
   BRAND_AR,
   BRAND_EN,
@@ -106,24 +107,12 @@ function Storefront() {
 
   const buy = useMutation({
     mutationFn: async ({ product, code }: { product: Product; code: string }) => {
-      const { data, error } = await supabase.rpc("buy_product", {
-        _product_id: product.id,
-        _discount_code: code.trim() || null,
+      const row = await buyProductWithLocalDiscount({
+        data: {
+          productId: product.id,
+          code: code.trim() || null,
+        },
       });
-      if (error) throw error;
-      const row = data as {
-        id: string;
-        user_id: string;
-        merchant_id: string | null;
-        chat_opened_at: string | null;
-        chat_expires_at: string | null;
-        original_price: number;
-        price: number;
-        discount_percent: number;
-        discount_code: string | null;
-        delivery_text: string | null;
-        delivery_file: string | null;
-      };
       let downloadUrl: string | null = null;
       if (row?.delivery_file) {
         const signed = await supabase.storage
@@ -165,7 +154,12 @@ function Storefront() {
       void qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (e) => {
-      const msg = e instanceof Error ? e.message : String(e);
+      const error = e as { message?: unknown } | null;
+      const msg = e instanceof Error
+        ? e.message
+        : error && typeof error.message === "string"
+          ? error.message
+          : String(e);
       toast.error(
         msg.includes("not_enough_coins") || msg.includes("insufficient_coins")
           ? "رصيد Iraq Coins غير كافي"
