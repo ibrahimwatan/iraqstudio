@@ -25,6 +25,7 @@ export type Database = {
           description: string
           id: string
           image_url: string | null
+          images: string[]
           price: number
           stock: number
           title: string
@@ -39,6 +40,7 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string | null
+          images?: string[]
           price?: number
           stock?: number
           title: string
@@ -53,6 +55,7 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string | null
+          images?: string[]
           price?: number
           stock?: number
           title?: string
@@ -83,32 +86,70 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          purchase_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          purchase_id: string
+          sender_id?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          purchase_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_messages_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchases: {
         Row: {
+          chat_expires_at: string
           created_at: string
           delivery_file: string | null
           delivery_text: string | null
           id: string
+          merchant_id: string | null
           price: number
           product_id: string | null
           product_title: string
           user_id: string
         }
         Insert: {
+          chat_expires_at?: string
           created_at?: string
           delivery_file?: string | null
           delivery_text?: string | null
           id?: string
+          merchant_id?: string | null
           price: number
           product_id?: string | null
           product_title: string
           user_id: string
         }
         Update: {
+          chat_expires_at?: string
           created_at?: string
           delivery_file?: string | null
           delivery_text?: string | null
           id?: string
+          merchant_id?: string | null
           price?: number
           product_id?: string | null
           product_title?: string
@@ -202,10 +243,12 @@ export type Database = {
       buy_product: {
         Args: { _product_id: string }
         Returns: {
+          chat_expires_at: string
           created_at: string
           delivery_file: string | null
           delivery_text: string | null
           id: string
+          merchant_id: string | null
           price: number
           product_id: string | null
           product_title: string
@@ -218,6 +261,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_access_purchase: { Args: { _purchase_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -225,6 +269,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_chat_open: { Args: { _purchase_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "member" | "merchant"
