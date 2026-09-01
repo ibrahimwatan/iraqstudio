@@ -31,7 +31,8 @@ type Purchase = {
   product_title: string;
   price: number;
   created_at: string;
-  chat_expires_at: string;
+  chat_opened_at: string | null;
+  chat_expires_at: string | null;
   delivery_text: string | null;
   delivery_file: string | null;
 };
@@ -47,7 +48,7 @@ function OrdersPage() {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, user_id, merchant_id, product_title, price, created_at, chat_expires_at, delivery_text, delivery_file",
+          "id, user_id, merchant_id, product_title, price, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
