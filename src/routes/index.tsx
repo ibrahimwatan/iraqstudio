@@ -17,6 +17,7 @@ import {
 } from "@/lib/store";
 
 import { Button } from "@/components/ui/button";
+import { PurchaseChat } from "@/components/PurchaseChat";
 import heroImg from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/")({
@@ -58,6 +59,13 @@ function Storefront() {
     title: string;
     text: string | null;
     downloadUrl: string | null;
+    purchase: {
+      id: string;
+      user_id: string;
+      merchant_id: string | null;
+      chat_opened_at: string | null;
+      chat_expires_at: string | null;
+    };
   } | null>(null);
 
 
@@ -93,7 +101,15 @@ function Storefront() {
     mutationFn: async (product: Product) => {
       const { data, error } = await supabase.rpc("buy_product", { _product_id: product.id });
       if (error) throw error;
-      const row = data as { delivery_text: string | null; delivery_file: string | null };
+      const row = data as {
+        id: string;
+        user_id: string;
+        merchant_id: string | null;
+        chat_opened_at: string | null;
+        chat_expires_at: string | null;
+        delivery_text: string | null;
+        delivery_file: string | null;
+      };
       let downloadUrl: string | null = null;
       if (row?.delivery_file) {
         const signed = await supabase.storage
@@ -101,7 +117,17 @@ function Storefront() {
           .createSignedUrl(row.delivery_file, 60 * 60);
         downloadUrl = signed.data?.signedUrl ?? null;
       }
-      return { text: row?.delivery_text ?? null, downloadUrl };
+      return {
+        text: row?.delivery_text ?? null,
+        downloadUrl,
+        purchase: {
+          id: row.id,
+          user_id: row.user_id,
+          merchant_id: row.merchant_id,
+          chat_opened_at: row.chat_opened_at,
+          chat_expires_at: row.chat_expires_at,
+        },
+      };
     },
     onSuccess: (d, p) => {
       toast.success(`تم شراء ${p.title} بنجاح`);
@@ -175,6 +201,10 @@ function Storefront() {
           <Button asChild variant="outline" className="mt-3 me-2 font-display font-bold">
             <Link to="/orders">عرض سجل الشراء والشات</Link>
           </Button>
+          <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <p className="mb-2 font-display text-[13px] font-bold">شات الطلب</p>
+            <PurchaseChat purchase={delivery.purchase} />
+          </div>
           {!delivery.text && !delivery.downloadUrl && (
             <p className="mt-2 text-[12px] text-muted-foreground">
               تواصل معنا في الديسكورد لإكمال التسليم.
