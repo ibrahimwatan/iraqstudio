@@ -121,7 +121,7 @@ function MerchantPanel() {
       let deliveryFile: string | null = null;
 
       if (kind === "account") {
-        deliveryText = `اسم الحساب: ${accountName.trim()}\nيوزر الحساب: ${accountUser.trim()}`;
+        deliveryText = `يوزر الحساب: ${accountUser.trim()}\nباسورد الحساب: ${accountPass.trim()}\nالحساب غير مربوط بإيميل ✅`;
       } else if (kind === "script") {
         deliveryText = scriptText.trim();
       } else if (kind === "file") {
