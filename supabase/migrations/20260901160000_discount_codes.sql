@@ -3,9 +3,11 @@ CREATE TABLE public.discount_codes (
   code text NOT NULL UNIQUE CHECK (code = upper(code) AND code ~ '^[A-Z0-9_-]{3,32}$'),
   discount_percent numeric(5,2) NOT NULL CHECK (discount_percent > 0 AND discount_percent <= 100),
   active boolean NOT NULL DEFAULT true,
-  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL DEFAULT auth.uid(),
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.discount_codes ALTER COLUMN created_by SET DEFAULT auth.uid();
 
 GRANT SELECT, INSERT, DELETE ON public.discount_codes TO authenticated;
 GRANT ALL ON public.discount_codes TO service_role;
