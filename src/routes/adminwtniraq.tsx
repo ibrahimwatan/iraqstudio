@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, Coins, Package, Store, Trash2 } from "lucide-react";
+import { Ban, Coins, Download, Package, Receipt, Store, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { categoryLabel, formatCoins } from "@/lib/store";
+import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -22,6 +22,25 @@ export const Route = createFileRoute("/adminwtniraq")({
   }),
   component: AdminPage,
 });
+
+
+type AdminProduct = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  stock: number;
+  active: boolean;
+  created_at: string;
+  created_by: string | null;
+  image_url: string | null;
+  images: string[];
+  imageUrls: string[];
+  delivery_text: string | null;
+  delivery_file: string | null;
+  merchant_username: string | null;
+};
 
 function AdminPage() {
   const { isAdmin, loading, user } = useAuth();
@@ -78,10 +97,33 @@ function AdminPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, category, price, stock, active")
+        .select("id, title, description, category, price, stock, active, created_at, created_by, image_url, images, delivery_text, delivery_file")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      const rows = data as Array<Omit<AdminProduct, "imageUrls" | "merchant_username">>;
+      const merchantIds = [...new Set(rows.map((product) => product.created_by).filter((id): id is string => Boolean(id)))];
+      const profileResult = merchantIds.length
+        ? await supabase.from("profiles").select("id, username").in("id", merchantIds)
+        : { data: [], error: null };
+      if (profileResult.error) throw profileResult.error;
+      const usernames = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile.username]));
+
+      return Promise.all(
+        rows.map(async (product) => {
+          const signed = product.images?.length
+            ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(product.images, 60 * 60)
+            : { data: [] };
+          const imageUrls = (signed.data ?? [])
+            .map((image) => image.signedUrl)
+            .filter((url): url is string => Boolean(url));
+          return {
+            ...product,
+            imageUrls: imageUrls.length > 0 ? imageUrls : product.image_url ? [product.image_url] : [],
+            merchant_username: product.created_by ? usernames.get(product.created_by) ?? null : null,
+          } satisfies AdminProduct;
+        }),
+      );
     },
   });
 
@@ -252,36 +294,93 @@ function AdminPanel() {
             hint="للمراجعة والحذف فقط — الإضافة من لوحة التاجر"
           />
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-3">
             {products.isLoading && <p className="text-[12px] text-muted-foreground">جاري التحميل...</p>}
             {products.data?.length === 0 && (
               <p className="text-[12px] text-muted-foreground">لا توجد منتجات بعد.</p>
             )}
-            {products.data?.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-elevated px-3 py-2.5"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-display text-[13px] font-bold">{p.title}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {categoryLabel(p.category)} · {formatCoins(p.price)} عملة · متوفر {p.stock}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="حذف"
-                  onClick={() => removeProduct.mutate(p.id)}
-                >
-                  <Trash2 className="size-4 text-destructive" />
-                </Button>
-              </div>
+            {products.data?.map((product) => (
+              <AdminProductCard
+                key={product.id}
+                product={product}
+                onDelete={() => removeProduct.mutate(product.id)}
+              />
             ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-elevated p-3">
+            <p className="text-[12px] text-muted-foreground">لمراجعة تفاصيل المشتريات والشات مع المشترين:</p>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/orders"><Receipt className="me-1.5 size-4" /> سجل الشراء</Link>
+            </Button>
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+
+function AdminProductCard({ product, onDelete }: { product: AdminProduct; onDelete: () => void }) {
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+  async function openDeliveryFile() {
+    if (!product.delivery_file) return;
+    const signed = await supabase.storage.from(PRODUCT_FILES_BUCKET).createSignedUrl(product.delivery_file, 3600);
+    setFileUrl(signed.data?.signedUrl ?? null);
+    if (signed.data?.signedUrl) window.open(signed.data.signedUrl, "_blank");
+  }
+
+  return (
+    <article className="rounded-lg border border-border bg-elevated p-4">
+      {product.imageUrls.length > 0 && (
+        <div className="mb-3 flex gap-2 overflow-x-auto">
+          {product.imageUrls.slice(0, MAX_PRODUCT_IMAGES).map((imageUrl) => (
+            <img key={imageUrl} src={imageUrl} alt="" className="size-20 shrink-0 rounded-lg object-cover" loading="lazy" />
+          ))}
+        </div>
+      )}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-[14px] font-bold">{product.title}</h3>
+            <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+              {product.active ? "نشط" : "متوقف"}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {categoryLabel(product.category)} · {formatCoins(product.price)} عملة · المخزون {product.stock}
+          </p>
+        </div>
+        <Button variant="ghost" size="icon" aria-label="حذف المنتج" onClick={onDelete}>
+          <Trash2 className="size-4 text-destructive" />
+        </Button>
+      </div>
+
+      <div className="mt-3 grid gap-2 rounded-lg border border-border bg-card p-3 text-[11px] sm:grid-cols-2">
+        <p><span className="text-muted-foreground">التاجر:</span> {product.merchant_username ?? "غير معروف"}</p>
+        <p dir="ltr"><span className="text-muted-foreground">تاريخ الإضافة:</span> {new Date(product.created_at).toLocaleString("ar-IQ")}</p>
+        <p dir="ltr" className="sm:col-span-2"><span className="text-muted-foreground">معرّف المنتج:</span> {product.id}</p>
+      </div>
+
+      <p className="mt-3 whitespace-pre-wrap text-[12px] text-muted-foreground">
+        {product.description || "لا يوجد وصف"}
+      </p>
+
+      {product.delivery_text && (
+        <pre dir="ltr" className="mt-3 max-h-36 overflow-auto rounded-lg border border-border bg-card p-3 font-mono text-[11px] whitespace-pre-wrap">
+          {product.delivery_text}
+        </pre>
+      )}
+      {product.delivery_file && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => void openDeliveryFile()}>
+            <Download className="me-1.5 size-4" /> {fileUrl ? "فتح الملف مرة أخرى" : "فتح ملف التسليم"}
+          </Button>
+          <span dir="ltr" className="max-w-full truncate text-[10px] text-muted-foreground">{product.delivery_file}</span>
+        </div>
+      )}
+    </article>
   );
 }
 
