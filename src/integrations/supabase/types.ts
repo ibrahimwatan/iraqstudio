@@ -128,7 +128,10 @@ export type Database = {
           id: string
           merchant_id: string | null
           price: number
+          product_category: string | null
+          product_description: string | null
           product_id: string | null
+          product_images: string[]
           product_title: string
           user_id: string
         }
@@ -141,7 +144,10 @@ export type Database = {
           id?: string
           merchant_id?: string | null
           price: number
+          product_category?: string | null
+          product_description?: string | null
           product_id?: string | null
+          product_images?: string[]
           product_title: string
           user_id: string
         }
@@ -154,7 +160,10 @@ export type Database = {
           id?: string
           merchant_id?: string | null
           price?: number
+          product_category?: string | null
+          product_description?: string | null
           product_id?: string | null
+          product_images?: string[]
           product_title?: string
           user_id?: string
         }
@@ -254,7 +263,10 @@ export type Database = {
           id: string
           merchant_id: string | null
           price: number
+          product_category: string | null
+          product_description: string | null
           product_id: string | null
+          product_images: string[]
           product_title: string
           user_id: string
         }
@@ -276,7 +288,10 @@ export type Database = {
           id: string
           merchant_id: string | null
           price: number
+          product_category: string | null
+          product_description: string | null
           product_id: string | null
+          product_images: string[]
           product_title: string
           user_id: string
         }
