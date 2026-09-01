@@ -67,11 +67,25 @@ function Storefront() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, title, description, category, price, stock, image_url")
+        .select("id, title, description, category, price, stock, image_url, images")
         .eq("active", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Product[];
+      const rows = data as Array<Omit<Product, "imageUrls">>;
+      return Promise.all(
+        rows.map(async (product) => {
+          const signed = product.images?.length
+            ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(product.images, 60 * 60)
+            : { data: [] };
+          const imageUrls = (signed.data ?? [])
+            .map((item) => item.signedUrl)
+            .filter((url): url is string => Boolean(url));
+          return {
+            ...product,
+            imageUrls: imageUrls.length > 0 ? imageUrls : product.image_url ? [product.image_url] : [],
+          };
+        }),
+      );
     },
   });
 
