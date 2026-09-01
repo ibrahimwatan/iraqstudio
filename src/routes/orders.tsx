@@ -27,6 +27,7 @@ export const Route = createFileRoute("/orders")({
 type Purchase = {
   id: string;
   user_id: string;
+  product_id: string | null;
   merchant_id: string | null;
   product_title: string;
   product_description: string | null;
@@ -43,6 +44,57 @@ type Purchase = {
   merchant_username: string | null;
 };
 
+
+type PurchaseRow = Omit<Purchase, "product_image_urls" | "buyer_username" | "merchant_username">;
+
+type ProductFallback = {
+  id: string;
+  description: string;
+  category: string;
+  image_url: string | null;
+};
+
+async function decoratePurchases(rows: PurchaseRow[]): Promise<Purchase[]> {
+  const profileIds = [...new Set(rows.flatMap((purchase) => [purchase.user_id, purchase.merchant_id]).filter((id): id is string => Boolean(id)))];
+  const productIds = [...new Set(rows.map((purchase) => purchase.product_id).filter((id): id is string => Boolean(id)))];
+  const [profileResult, productResult] = await Promise.all([
+    profileIds.length
+      ? supabase.from("profiles").select("id, username").in("id", profileIds)
+      : Promise.resolve({ data: [], error: null }),
+    productIds.length
+      ? supabase.from("products").select("id, description, category, image_url").in("id", productIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (profileResult.error) throw profileResult.error;
+  const usernames = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile.username]));
+  const productInfo = new Map((productResult.data ?? []).map((product) => [product.id, product as ProductFallback]));
+
+  return Promise.all(
+    rows.map(async (purchase) => {
+      const fallback = purchase.product_id ? productInfo.get(purchase.product_id) : undefined;
+      const imagePaths = purchase.product_images ?? [];
+      const signed = imagePaths.length
+        ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(imagePaths, 60 * 60)
+        : { data: [] };
+      const product_image_urls = (signed.data ?? [])
+        .map((image) => image.signedUrl)
+        .filter((url): url is string => Boolean(url));
+      return {
+        ...purchase,
+        product_description: purchase.product_description ?? fallback?.description ?? null,
+        product_category: purchase.product_category ?? fallback?.category ?? null,
+        product_image_urls: product_image_urls.length > 0
+          ? product_image_urls
+          : fallback?.image_url
+            ? [fallback.image_url]
+            : [],
+        buyer_username: usernames.get(purchase.user_id) ?? null,
+        merchant_username: purchase.merchant_id ? usernames.get(purchase.merchant_id) ?? null : null,
+      } satisfies Purchase;
+    }),
+  );
+}
+
 function OrdersPage() {
   const { user, loading, isAdmin } = useAuth();
   const [tab, setTab] = useState<"mine" | "sales">(() => (isAdmin ? "sales" : "mine"));
@@ -51,38 +103,54 @@ function OrdersPage() {
     queryKey: ["purchases"],
     enabled: Boolean(user),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const full = await supabase
         .from("purchases")
         .select(
-          "id, user_id, merchant_id, product_title, product_description, product_category, product_images, price, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
+          "id, user_id, product_id, merchant_id, product_title, product_description, product_category, product_images, price, created_at, chat_opened_at, chat_expires_at, delivery_text, delivery_file",
         )
         .order("created_at", { ascending: false });
-      if (error) throw error;
 
-      const baseRows = data as Array<Omit<Purchase, "product_image_urls" | "buyer_username" | "merchant_username">>;
-      const profileIds = [...new Set(baseRows.flatMap((purchase) => [purchase.user_id, purchase.merchant_id]).filter((id): id is string => Boolean(id)))];
-      const profileResult = profileIds.length
-        ? await supabase.from("profiles").select("id, username").in("id", profileIds)
-        : { data: [], error: null };
-      if (profileResult.error) throw profileResult.error;
-      const usernames = new Map((profileResult.data ?? []).map((profile) => [profile.id, profile.username]));
+      if (!full.error) {
+        return decoratePurchases(full.data as PurchaseRow[]);
+      }
 
-      return Promise.all(
-        baseRows.map(async (purchase) => {
-          const signed = purchase.product_images?.length
-            ? await supabase.storage.from(PRODUCT_IMAGES_BUCKET).createSignedUrls(purchase.product_images, 60 * 60)
-            : { data: [] };
-          const product_image_urls = (signed.data ?? [])
-            .map((image) => image.signedUrl)
-            .filter((url): url is string => Boolean(url));
-          return {
-            ...purchase,
-            product_image_urls,
-            buyer_username: usernames.get(purchase.user_id) ?? null,
-            merchant_username: purchase.merchant_id ? usernames.get(purchase.merchant_id) ?? null : null,
-          } satisfies Purchase;
-        }),
-      );
+      // Keep the history usable while a project is still on the older schema.
+      const withDelivery = await supabase
+        .from("purchases")
+        .select("id, user_id, product_id, merchant_id, product_title, price, created_at, chat_expires_at, delivery_text, delivery_file")
+        .order("created_at", { ascending: false });
+      if (!withDelivery.error) {
+        const rowsWithDelivery = (withDelivery.data ?? []).map((purchase) => ({
+          ...purchase,
+          product_description: null,
+          product_category: null,
+          product_images: [],
+          product_image_urls: [],
+          chat_opened_at: purchase.chat_expires_at ? purchase.created_at : null,
+        })) as PurchaseRow[];
+        return decoratePurchases(rowsWithDelivery);
+      }
+
+      const legacy = await supabase
+        .from("purchases")
+        .select("id, user_id, product_id, product_title, price, created_at")
+        .order("created_at", { ascending: false });
+      if (legacy.error) {
+        throw new Error("تعذر تحميل سجل الشراء: " + full.error.message);
+      }
+      const legacyRows = (legacy.data ?? []).map((purchase) => ({
+        ...purchase,
+        merchant_id: null,
+        product_description: null,
+        product_category: null,
+        product_images: [],
+        product_image_urls: [],
+        chat_opened_at: null,
+        chat_expires_at: null,
+        delivery_text: null,
+        delivery_file: null,
+      })) as PurchaseRow[];
+      return decoratePurchases(legacyRows);
     },
   });
 
@@ -116,6 +184,13 @@ function OrdersPage() {
 
       {rows.isLoading ? (
         <p className="text-[12px] text-muted-foreground">جاري التحميل...</p>
+      ) : rows.isError ? (
+        <div className="panel p-6 text-center">
+          <Receipt className="mx-auto size-5 text-destructive" />
+          <p className="mt-2 font-display text-sm font-bold">تعذر تحميل سجل الشراء</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{rows.error instanceof Error ? rows.error.message : "حاول مرة ثانية"}</p>
+          <Button className="mt-3" size="sm" onClick={() => void rows.refetch()}>إعادة المحاولة</Button>
+        </div>
       ) : list.length === 0 ? (
         <div className="panel p-6 text-center">
           <Receipt className="mx-auto size-5 text-muted-foreground" />
