@@ -65,7 +65,6 @@ function Storefront() {
       id: string;
       user_id: string;
       merchant_id: string | null;
-      chat_opened_at: string | null;
       chat_expires_at: string | null;
     };
   } | null>(null);
@@ -120,7 +119,6 @@ function Storefront() {
           id: row.id,
           user_id: row.user_id,
           merchant_id: row.merchant_id,
-          chat_opened_at: row.chat_opened_at,
           chat_expires_at: row.chat_expires_at,
         },
       };

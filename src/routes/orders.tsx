@@ -111,7 +111,7 @@ function OrdersPage() {
         .order("created_at", { ascending: false });
 
       if (!full.error) {
-        return decoratePurchases(full.data as PurchaseRow[]);
+        return decoratePurchases(full.data as unknown as PurchaseRow[]);
       }
 
       // Keep the history usable while a project is still on the older schema.
