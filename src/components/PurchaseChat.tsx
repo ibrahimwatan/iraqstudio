@@ -12,7 +12,7 @@ export type ChatPurchase = {
   id: string;
   user_id: string;
   merchant_id: string | null;
-  chat_opened_at: string | null;
+  chat_opened_at?: string | null;
   chat_expires_at: string | null;
 };
 
@@ -28,22 +28,10 @@ export function PurchaseChat({ purchase }: { purchase: ChatPurchase }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
   const [chatState, setChatState] = useState({
-    openedAt: purchase.chat_opened_at,
+    openedAt: purchase.chat_opened_at ?? null,
     expiresAt: purchase.chat_expires_at,
   });
   const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    let mounted = true;
-    void supabase.rpc("open_purchase_chat", { _purchase_id: purchase.id }).then(({ data, error }) => {
-      if (!error && data && mounted) {
-        setChatState({ openedAt: data.chat_opened_at, expiresAt: data.chat_expires_at });
-      }
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [purchase.id]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
