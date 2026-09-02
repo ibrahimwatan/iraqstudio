@@ -56,6 +56,8 @@ function Storefront() {
   const { user, profile, refresh } = useAuth();
   const qc = useQueryClient();
   const [cat, setCat] = useState<string>("all");
+  const [code, setCode] = useState("");
+  const [codePercent, setCodePercent] = useState<number | null>(null);
   const [delivery, setDelivery] = useState<{
     title: string;
     text: string | null;
@@ -102,6 +104,7 @@ function Storefront() {
     mutationFn: async ({ product }: { product: Product }) => {
       const { data: row, error } = await supabase.rpc("buy_product", {
         _product_id: product.id,
+        _code: code.trim() || undefined,
       });
       if (error) throw error;
       let downloadUrl: string | null = null;
@@ -147,7 +150,9 @@ function Storefront() {
           ? "رصيد Iraq Coins غير كافي"
           : msg.includes("out_of_stock")
             ? "الكمية غير متوفرة حالياً"
-            : msg.includes("banned")
+            : msg.includes("invalid_code")
+              ? "كود الخصم غير صحيح أو غير مفعّل"
+              : msg.includes("banned")
               ? "حسابك محظور من الشراء"
               : msg,
       );
