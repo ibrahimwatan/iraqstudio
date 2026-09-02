@@ -120,50 +120,38 @@ export type Database = {
       }
       purchases: {
         Row: {
-          chat_opened_at: string | null
-          chat_expires_at: string | null
+          chat_expires_at: string
           created_at: string
           delivery_file: string | null
           delivery_text: string | null
           id: string
           merchant_id: string | null
           price: number
-          product_category: string | null
-          product_description: string | null
           product_id: string | null
-          product_images: string[]
           product_title: string
           user_id: string
         }
         Insert: {
-          chat_opened_at?: string | null
-          chat_expires_at?: string | null
+          chat_expires_at?: string
           created_at?: string
           delivery_file?: string | null
           delivery_text?: string | null
           id?: string
           merchant_id?: string | null
           price: number
-          product_category?: string | null
-          product_description?: string | null
           product_id?: string | null
-          product_images?: string[]
           product_title: string
           user_id: string
         }
         Update: {
-          chat_opened_at?: string | null
-          chat_expires_at?: string | null
+          chat_expires_at?: string
           created_at?: string
           delivery_file?: string | null
           delivery_text?: string | null
           id?: string
           merchant_id?: string | null
           price?: number
-          product_category?: string | null
-          product_description?: string | null
           product_id?: string | null
-          product_images?: string[]
           product_title?: string
           user_id?: string
         }
@@ -255,43 +243,14 @@ export type Database = {
       buy_product: {
         Args: { _product_id: string }
         Returns: {
-          chat_opened_at: string | null
-          chat_expires_at: string | null
+          chat_expires_at: string
           created_at: string
           delivery_file: string | null
           delivery_text: string | null
           id: string
           merchant_id: string | null
           price: number
-          product_category: string | null
-          product_description: string | null
           product_id: string | null
-          product_images: string[]
-          product_title: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "purchases"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      open_purchase_chat: {
-        Args: { _purchase_id: string }
-        Returns: {
-          chat_opened_at: string | null
-          chat_expires_at: string | null
-          created_at: string
-          delivery_file: string | null
-          delivery_text: string | null
-          id: string
-          merchant_id: string | null
-          price: number
-          product_category: string | null
-          product_description: string | null
-          product_id: string | null
-          product_images: string[]
           product_title: string
           user_id: string
         }
