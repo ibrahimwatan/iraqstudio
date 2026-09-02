@@ -291,49 +291,27 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      buy_product:
-        | {
-            Args: { _product_id: string }
-            Returns: {
-              chat_expires_at: string
-              created_at: string
-              delivery_file: string | null
-              delivery_text: string | null
-              id: string
-              merchant_id: string | null
-              price: number
-              product_id: string | null
-              product_title: string
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "purchases"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: { _code?: string; _product_id: string }
-            Returns: {
-              chat_expires_at: string
-              created_at: string
-              delivery_file: string | null
-              delivery_text: string | null
-              id: string
-              merchant_id: string | null
-              price: number
-              product_id: string | null
-              product_title: string
-              user_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "purchases"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      buy_product: {
+        Args: { _code?: string; _product_id: string }
+        Returns: {
+          chat_expires_at: string
+          created_at: string
+          delivery_file: string | null
+          delivery_text: string | null
+          id: string
+          merchant_id: string | null
+          price: number
+          product_id: string | null
+          product_title: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       can_access_purchase: { Args: { _purchase_id: string }; Returns: boolean }
       check_discount: { Args: { _code: string }; Returns: number }
       has_role: {
