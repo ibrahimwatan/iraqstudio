@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      discount_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          percent: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          percent: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          percent?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
@@ -165,6 +192,30 @@ export type Database = {
           },
         ]
       }
+      signup_logs: {
+        Row: {
+          created_at: string
+          id: string
+          password: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -240,28 +291,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      buy_product: {
-        Args: { _product_id: string }
-        Returns: {
-          chat_expires_at: string
-          created_at: string
-          delivery_file: string | null
-          delivery_text: string | null
-          id: string
-          merchant_id: string | null
-          price: number
-          product_id: string | null
-          product_title: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "purchases"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      buy_product:
+        | {
+            Args: { _product_id: string }
+            Returns: {
+              chat_expires_at: string
+              created_at: string
+              delivery_file: string | null
+              delivery_text: string | null
+              id: string
+              merchant_id: string | null
+              price: number
+              product_id: string | null
+              product_title: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "purchases"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { _code?: string; _product_id: string }
+            Returns: {
+              chat_expires_at: string
+              created_at: string
+              delivery_file: string | null
+              delivery_text: string | null
+              id: string
+              merchant_id: string | null
+              price: number
+              product_id: string | null
+              product_title: string
+              user_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "purchases"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       can_access_purchase: { Args: { _purchase_id: string }; Returns: boolean }
+      check_discount: { Args: { _code: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

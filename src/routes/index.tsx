@@ -18,6 +18,7 @@ import {
 } from "@/lib/store";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PurchaseChat } from "@/components/PurchaseChat";
 import heroImg from "@/assets/hero.jpg";
 
@@ -56,6 +57,8 @@ function Storefront() {
   const { user, profile, refresh } = useAuth();
   const qc = useQueryClient();
   const [cat, setCat] = useState<string>("all");
+  const [code, setCode] = useState("");
+  const [codePercent, setCodePercent] = useState<number | null>(null);
   const [delivery, setDelivery] = useState<{
     title: string;
     text: string | null;
@@ -102,6 +105,7 @@ function Storefront() {
     mutationFn: async ({ product }: { product: Product }) => {
       const { data: row, error } = await supabase.rpc("buy_product", {
         _product_id: product.id,
+        _code: code.trim() || undefined,
       });
       if (error) throw error;
       let downloadUrl: string | null = null;
@@ -147,7 +151,9 @@ function Storefront() {
           ? "رصيد Iraq Coins غير كافي"
           : msg.includes("out_of_stock")
             ? "الكمية غير متوفرة حالياً"
-            : msg.includes("banned")
+            : msg.includes("invalid_code")
+              ? "كود الخصم غير صحيح أو غير مفعّل"
+              : msg.includes("banned")
               ? "حسابك محظور من الشراء"
               : msg,
       );
@@ -242,6 +248,42 @@ function Storefront() {
           ))}
         </div>
 
+        {user && (
+          <div className="panel mt-4 flex flex-wrap items-center gap-2 p-4">
+            <span className="font-display text-[13px] font-bold">اكتب كود الخصم (اختياري)</span>
+            <Input
+              dir="ltr"
+              value={code}
+              onChange={(e) => {
+                setCode(e.target.value);
+                setCodePercent(null);
+              }}
+              placeholder="CODE"
+              className="min-w-32 flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!code.trim()}
+              onClick={async () => {
+                const { data, error } = await supabase.rpc("check_discount", { _code: code.trim() });
+                if (error || data === null) {
+                  setCodePercent(null);
+                  toast.error("كود الخصم غير صحيح أو غير مفعّل");
+                  return;
+                }
+                setCodePercent(data as number);
+                toast.success(`تم تطبيق خصم ${data}%`);
+              }}
+            >
+              تحقق
+            </Button>
+            {codePercent !== null && (
+              <span className="font-mono text-[12px] text-coin-soft">خصم {codePercent}%</span>
+            )}
+          </div>
+        )}
+
         {!user ? (
           <div className="panel mt-5 p-6 text-center">
             <p className="font-display text-sm font-bold">المنتجات تظهر للأعضاء فقط</p>
@@ -291,7 +333,14 @@ function Storefront() {
                   <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                     <span className="flex items-center gap-1.5 font-mono text-[13px] font-semibold text-coin-soft">
                       <Coins className="size-3.5 text-coin" />
-                      {formatCoins(p.price)}
+                      {codePercent ? (
+                        <>
+                          <span className="text-muted-foreground line-through">{formatCoins(p.price)}</span>{" "}
+                          {formatCoins(Math.floor(p.price - (p.price * codePercent) / 100))}
+                        </>
+                      ) : (
+                        formatCoins(p.price)
+                      )}
                     </span>
                     <Button
                       size="sm"
