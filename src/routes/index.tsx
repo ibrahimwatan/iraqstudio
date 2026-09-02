@@ -103,9 +103,10 @@ function Storefront() {
 
   const buy = useMutation({
     mutationFn: async ({ product }: { product: Product }) => {
+      const trimmedCode = code.trim();
       const { data: row, error } = await supabase.rpc("buy_product", {
         _product_id: product.id,
-        _code: code.trim() || undefined,
+        ...(trimmedCode ? { _code: trimmedCode } : {}),
       });
       if (error) throw error;
       let downloadUrl: string | null = null;
