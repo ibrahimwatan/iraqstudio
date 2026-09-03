@@ -87,6 +87,8 @@ function AdminPanel() {
   const [banUser, setBanUser] = useState("");
   const [coinUser, setCoinUser] = useState("");
   const [coinAmount, setCoinAmount] = useState("100");
+  const [removeUser, setRemoveUser] = useState("");
+  const [removeAmount, setRemoveAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
   const [newCode, setNewCode] = useState("");
   const [newPercent, setNewPercent] = useState("10");
@@ -225,6 +227,20 @@ function AdminPanel() {
     onError: (e) => toast.error(readError(e)),
   });
 
+  const removeCoins = useMutation({
+    mutationFn: async ({ username, amount }: { username: string; amount: number }) => {
+      const { error } = await supabase.rpc("admin_add_coins", { _username: username, _amount: -amount });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(`تم سحب ${formatCoins(vars.amount)} عملة من ${vars.username}`);
+      setRemoveUser("");
+      void refresh();
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
+
+
   const setMerchant = useMutation({
     mutationFn: async ({ username, grant }: { username: string; grant: boolean }) => {
       const { error } = await supabase.rpc("admin_set_role", {
@@ -323,8 +339,39 @@ function AdminPanel() {
               شحن
             </Button>
           </div>
+        </section>
+
+        <section className="panel p-5 rise">
+          <SectionTitle
+            icon={<Coins className="size-4 text-destructive" />}
+            title="سحب عملات"
+            hint="خصم Iraq Coins من رصيد يوزر معيّن"
+          />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Input
+              dir="ltr"
+              value={removeUser}
+              onChange={(e) => setRemoveUser(e.target.value)}
+              placeholder="username"
+              className="min-w-40 flex-1"
+            />
+            <Input
+              dir="ltr"
+              type="number"
+              value={removeAmount}
+              onChange={(e) => setRemoveAmount(e.target.value)}
+              className="w-28"
+            />
+            <Button
+              variant="destructive"
+              disabled={!removeUser.trim() || removeCoins.isPending}
+              onClick={() => removeCoins.mutate({ username: removeUser, amount: Number(removeAmount) || 0 })}
+            >
+              سحب
+            </Button>
+          </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            استخدم رقماً سالباً لخصم العملات من العضو.
+            الرصيد لا ينخفض عن الصفر حتى لو كتبت مبلغاً أكبر من الرصيد المتاح.
           </p>
         </section>
 
