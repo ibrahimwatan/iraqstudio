@@ -242,6 +242,11 @@ function MerchantPanel() {
             title="عرض منتج جديد"
             hint="يظهر للأعضاء داخل المتجر مباشرة"
           />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            رتبتك: <span className="font-semibold text-foreground">{merchantScopeLabel(scope)}</span>
+            {scope !== "all" && " — تعرض فقط في هذا القسم"}
+          </p>
+
           <form
             className="mt-4 grid gap-3 sm:grid-cols-2"
             onSubmit={(e) => {
