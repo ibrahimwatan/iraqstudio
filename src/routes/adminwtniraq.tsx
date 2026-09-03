@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Ban, Coins, Download, Package, Receipt, Store, Ticket, Trash2, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { MAX_PRODUCT_IMAGES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins } from "@/lib/store";
+import { MAX_PRODUCT_IMAGES, MERCHANT_SCOPES, PRODUCT_FILES_BUCKET, PRODUCT_IMAGES_BUCKET, categoryLabel, formatCoins, merchantScopeLabel } from "@/lib/store";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -90,6 +91,7 @@ function AdminPanel() {
   const [removeUser, setRemoveUser] = useState("");
   const [removeAmount, setRemoveAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
+  const [merchantScope, setMerchantScope] = useState<string>("all");
   const [newCode, setNewCode] = useState("");
   const [newPercent, setNewPercent] = useState("10");
 
@@ -242,16 +244,21 @@ function AdminPanel() {
 
 
   const setMerchant = useMutation({
-    mutationFn: async ({ username, grant }: { username: string; grant: boolean }) => {
+    mutationFn: async ({ username, grant, scope }: { username: string; grant: boolean; scope: string }) => {
       const { error } = await supabase.rpc("admin_set_role", {
         _username: username,
         _role: "merchant",
         _grant: grant,
+        _scope: scope,
       });
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
-      toast.success(vars.grant ? `تم تعيين ${vars.username} تاجراً` : `تم سحب صفة التاجر من ${vars.username}`);
+      toast.success(
+        vars.grant
+          ? `تم تعيين ${vars.username} ${merchantScopeLabel(vars.scope)}`
+          : `تم سحب صفة التاجر من ${vars.username}`,
+      );
       setMerchantUser("");
     },
     onError: (e) => toast.error(readError(e)),
@@ -379,7 +386,7 @@ function AdminPanel() {
           <SectionTitle
             icon={<Store className="size-4 text-primary" />}
             title="تعيين تاجر"
-            hint="اكتب يوزر الشخص لمنحه صفة تاجر"
+            hint="اكتب يوزر الشخص وحدد رتبة التاجر (عام أو قسم محدد)"
           />
           <div className="mt-4 flex flex-wrap gap-2">
             <Input
@@ -389,16 +396,28 @@ function AdminPanel() {
               placeholder="username"
               className="min-w-40 flex-1"
             />
+            <Select value={merchantScope} onValueChange={setMerchantScope}>
+              <SelectTrigger className="min-w-40 flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MERCHANT_SCOPES.map((s) => (
+                  <SelectItem key={s.key} value={s.key}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               disabled={!merchantUser.trim() || setMerchant.isPending}
-              onClick={() => setMerchant.mutate({ username: merchantUser, grant: true })}
+              onClick={() => setMerchant.mutate({ username: merchantUser, grant: true, scope: merchantScope })}
             >
               تعيين تاجر
             </Button>
             <Button
               variant="outline"
               disabled={!merchantUser.trim() || setMerchant.isPending}
-              onClick={() => setMerchant.mutate({ username: merchantUser, grant: false })}
+              onClick={() => setMerchant.mutate({ username: merchantUser, grant: false, scope: "all" })}
             >
               سحب الصفة
             </Button>

@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import {
   PRODUCT_CATEGORIES,
+  allowedCategories,
+  merchantScopeLabel,
   MAX_PRODUCT_IMAGES,
   PRODUCT_FILES_BUCKET,
   PRODUCT_IMAGES_BUCKET,
@@ -97,6 +99,14 @@ function MerchantPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageInputKey, setImageInputKey] = useState(0);
+
+  const scope = profile?.merchant_scope ?? "all";
+  const allowed = allowedCategories(scope);
+  const categoryOptions = PRODUCT_CATEGORIES.filter((c) => allowed.includes(c.key));
+
+  useEffect(() => {
+    if (!allowed.includes(category)) setCategory(allowed[0] ?? "other");
+  }, [scope]);
 
   const kind = deliveryKind(category);
 
@@ -280,7 +290,7 @@ function MerchantPanel() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRODUCT_CATEGORIES.map((c) => (
+                  {categoryOptions.map((c) => (
                     <SelectItem key={c.key} value={c.key}>
                       {c.label}
                     </SelectItem>
