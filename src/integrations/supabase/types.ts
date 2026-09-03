@@ -95,6 +95,7 @@ export type Database = {
           coins: number
           created_at: string
           id: string
+          merchant_scope: string
           username: string
         }
         Insert: {
@@ -102,6 +103,7 @@ export type Database = {
           coins?: number
           created_at?: string
           id: string
+          merchant_scope?: string
           username: string
         }
         Update: {
@@ -109,6 +111,7 @@ export type Database = {
           coins?: number
           created_at?: string
           id?: string
+          merchant_scope?: string
           username?: string
         }
         Relationships: []
@@ -246,6 +249,7 @@ export type Database = {
           coins: number
           created_at: string
           id: string
+          merchant_scope: string
           username: string
         }
         SetofOptions: {
@@ -262,6 +266,7 @@ export type Database = {
           coins: number
           created_at: string
           id: string
+          merchant_scope: string
           username: string
         }
         SetofOptions: {
@@ -275,6 +280,7 @@ export type Database = {
         Args: {
           _grant: boolean
           _role: Database["public"]["Enums"]["app_role"]
+          _scope?: string
           _username: string
         }
         Returns: {
@@ -282,6 +288,7 @@ export type Database = {
           coins: number
           created_at: string
           id: string
+          merchant_scope: string
           username: string
         }
         SetofOptions: {

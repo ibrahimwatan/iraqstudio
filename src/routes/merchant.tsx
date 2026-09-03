@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Eye, EyeOff, Package, Store, Trash2 } from "lucide-react";
@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import {
   PRODUCT_CATEGORIES,
+  allowedCategories,
+  merchantScopeLabel,
   MAX_PRODUCT_IMAGES,
   PRODUCT_FILES_BUCKET,
   PRODUCT_IMAGES_BUCKET,
@@ -97,6 +99,14 @@ function MerchantPanel() {
   const [file, setFile] = useState<File | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageInputKey, setImageInputKey] = useState(0);
+
+  const scope = profile?.merchant_scope ?? "all";
+  const allowed = allowedCategories(scope);
+  const categoryOptions = PRODUCT_CATEGORIES.filter((c) => allowed.includes(c.key));
+
+  useEffect(() => {
+    if (!allowed.includes(category)) setCategory(allowed[0] ?? "other");
+  }, [scope]);
 
   const kind = deliveryKind(category);
 
@@ -232,6 +242,11 @@ function MerchantPanel() {
             title="عرض منتج جديد"
             hint="يظهر للأعضاء داخل المتجر مباشرة"
           />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            رتبتك: <span className="font-semibold text-foreground">{merchantScopeLabel(scope)}</span>
+            {scope !== "all" && " — تعرض فقط في هذا القسم"}
+          </p>
+
           <form
             className="mt-4 grid gap-3 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -280,7 +295,7 @@ function MerchantPanel() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRODUCT_CATEGORIES.map((c) => (
+                  {categoryOptions.map((c) => (
                     <SelectItem key={c.key} value={c.key}>
                       {c.label}
                     </SelectItem>

@@ -69,3 +69,23 @@ export function timeLeftLabel(iso: string) {
   const m = Math.floor((ms % 3_600_000) / 60_000);
   return h > 0 ? `${h} ساعة و${m} دقيقة` : `${m} دقيقة`;
 }
+
+/** تخصص التاجر: "all" = عام، أو مفتاح قسم واحد */
+export const MERCHANT_SCOPES = [
+  { key: "all", label: "تاجر عام" },
+  { key: "accounts", label: "تاجر حسابات" },
+  { key: "maps", label: "تاجر مابات" },
+  { key: "scripts", label: "تاجر سكربتات" },
+  { key: "studio", label: "تاجر ستيديو لايت" },
+  { key: "other", label: "تاجر خدمات أخرى" },
+] as const;
+
+export function merchantScopeLabel(key: string) {
+  return MERCHANT_SCOPES.find((s) => s.key === key)?.label ?? "تاجر عام";
+}
+
+/** الأقسام المسموح للتاجر بالعرض فيها حسب تخصصه */
+export function allowedCategories(scope: string) {
+  if (!scope || scope === "all") return PRODUCT_CATEGORIES.map((c) => c.key as string);
+  return PRODUCT_CATEGORIES.filter((c) => c.key === scope).map((c) => c.key as string);
+}

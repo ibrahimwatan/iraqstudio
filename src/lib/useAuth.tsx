@@ -7,6 +7,7 @@ export type Profile = {
   username: string;
   coins: number;
   banned: boolean;
+  merchant_scope?: string;
 };
 
 type AuthValue = {
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const [{ data: prof }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("id, username, coins, banned").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("id, username, coins, banned, merchant_scope").eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
     setProfile((prof as Profile | null) ?? null);
