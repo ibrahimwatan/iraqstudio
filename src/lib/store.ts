@@ -70,7 +70,7 @@ export function timeLeftLabel(iso: string) {
   return h > 0 ? `${h} ساعة و${m} دقيقة` : `${m} دقيقة`;
 }
 
-/** تخصص التاجر: "all" = عام، أو مفتاح قسم واحد */
+/** تخصص التاجر: "all" = عام، أو قائمة أقسام مفصولة بفاصلة */
 export const MERCHANT_SCOPES = [
   { key: "all", label: "تاجر عام" },
   { key: "accounts", label: "تاجر حسابات" },
@@ -80,12 +80,22 @@ export const MERCHANT_SCOPES = [
   { key: "other", label: "تاجر خدمات أخرى" },
 ] as const;
 
-export function merchantScopeLabel(key: string) {
-  return MERCHANT_SCOPES.find((s) => s.key === key)?.label ?? "تاجر عام";
+export function parseScopes(scope: string | null | undefined): string[] {
+  const parts = (scope ?? "all").split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 0 || parts.includes("all")) return ["all"];
+  return Array.from(new Set(parts));
+}
+
+export function merchantScopeLabel(scope: string) {
+  const parts = parseScopes(scope);
+  const labels = parts.map((p) => MERCHANT_SCOPES.find((s) => s.key === p)?.label ?? "تاجر عام");
+  return labels.join(" + ");
 }
 
 /** الأقسام المسموح للتاجر بالعرض فيها حسب تخصصه */
 export function allowedCategories(scope: string) {
-  if (!scope || scope === "all") return PRODUCT_CATEGORIES.map((c) => c.key as string);
-  return PRODUCT_CATEGORIES.filter((c) => c.key === scope).map((c) => c.key as string);
+  const parts = parseScopes(scope);
+  if (parts.includes("all")) return PRODUCT_CATEGORIES.map((c) => c.key as string);
+  return PRODUCT_CATEGORIES.filter((c) => parts.includes(c.key)).map((c) => c.key as string);
 }
+
