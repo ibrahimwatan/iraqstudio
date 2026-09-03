@@ -87,6 +87,8 @@ function AdminPanel() {
   const [banUser, setBanUser] = useState("");
   const [coinUser, setCoinUser] = useState("");
   const [coinAmount, setCoinAmount] = useState("100");
+  const [removeUser, setRemoveUser] = useState("");
+  const [removeAmount, setRemoveAmount] = useState("100");
   const [merchantUser, setMerchantUser] = useState("");
   const [newCode, setNewCode] = useState("");
   const [newPercent, setNewPercent] = useState("10");
