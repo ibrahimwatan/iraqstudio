@@ -227,6 +227,20 @@ function AdminPanel() {
     onError: (e) => toast.error(readError(e)),
   });
 
+  const removeCoins = useMutation({
+    mutationFn: async ({ username, amount }: { username: string; amount: number }) => {
+      const { error } = await supabase.rpc("admin_add_coins", { _username: username, _amount: -amount });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(`تم سحب ${formatCoins(vars.amount)} عملة من ${vars.username}`);
+      setRemoveUser("");
+      void refresh();
+    },
+    onError: (e) => toast.error(readError(e)),
+  });
+
+
   const setMerchant = useMutation({
     mutationFn: async ({ username, grant }: { username: string; grant: boolean }) => {
       const { error } = await supabase.rpc("admin_set_role", {
